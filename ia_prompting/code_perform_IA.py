@@ -18,6 +18,11 @@ The output MUST start exactly with:
 
 from playwright.sync_api import Page, expect
 
+The next imports MUST be exactly:
+
+from pathlib import Path
+from datetime import datetime
+
 The output MUST contain exactly one test function using this structure:
 
 def test_<scenario_name>(page: Page):
@@ -44,7 +49,7 @@ NEVER generate:
 - custom page fixtures
 - browser lifecycle context managers
 - class-based tests
-- helper methods
+- helper methods outside the test function
 - main function
 - if __name__ == "__main__"
 
@@ -53,20 +58,42 @@ The test function must execute all actions directly.
 Good example:
 
 from playwright.sync_api import Page, expect
+from pathlib import Path
+from datetime import datetime
 
 def test_login(page: Page):
-    ## Open login page
-    page.goto("https://example.com")
+    execution_id = datetime.now().strftime("run_%Y%m%d_%H%M%S")
+    evidence_dir = Path(__file__).parent / "evidences" / execution_id
+    evidence_dir.mkdir(parents=True, exist_ok=True)
 
-    ## Fill valid credentials
-    page.get_by_test_id("username").fill("tester")
-    page.get_by_test_id("password").fill("password")
+    evidence_counter = 1
 
-    ## Submit login form
-    page.get_by_test_id("submit").click()
+    def capture_evidence(name: str):
+        nonlocal evidence_counter
+        file_name = f"{{evidence_counter:02d}}_{{name}}.png"
+        evidence_counter += 1
+        page.screenshot(path=str(evidence_dir / file_name))
 
-    ## Validate successful login
-    expect(page.get_by_test_id("logout-button")).to_be_visible()
+    try:
+        ## Open login page
+        page.goto("https://example.com")
+        capture_evidence("open_login_page")
+
+        ## Fill valid credentials
+        page.get_by_test_id("username").fill("tester")
+        page.get_by_test_id("password").fill("password")
+        capture_evidence("fill_valid_credentials")
+
+        ## Submit login form
+        page.get_by_test_id("submit").click()
+
+        ## Validate successful login
+        expect(page.get_by_test_id("logout-button")).to_be_visible()
+        capture_evidence("validate_successful_login")
+
+    except Exception:
+        page.screenshot(path=str(evidence_dir / "failure.png"))
+        raise
 
 Bad example:
 
@@ -115,6 +142,139 @@ RULES
 - DO NOT add text before or after the code
 - DO NOT add blank text before the import
 
+SCREENSHOT AND EVIDENCE RULES
+
+The generated test MUST create a unique evidence folder for each test execution.
+
+The generated test MUST import:
+
+from pathlib import Path
+from datetime import datetime
+
+The generated test MUST create the execution evidence folder using:
+
+execution_id = datetime.now().strftime("run_%Y%m%d_%H%M%S")
+evidence_dir = Path(__file__).parent / "evidences" / execution_id
+evidence_dir.mkdir(parents=True, exist_ok=True)
+
+The generated test MUST create screenshots only inside evidence_dir.
+
+The generated test MUST define a local screenshot helper inside the test function:
+
+evidence_counter = 1
+
+def capture_evidence(name: str):
+    nonlocal evidence_counter
+    file_name = f"{{evidence_counter:02d}}_{{name}}.png"
+    evidence_counter += 1
+    page.screenshot(path=str(evidence_dir / file_name))
+
+Use capture_evidence after important business evidence points.
+
+Screenshots MUST be captured after:
+- opening the initial page
+- clicking visible texts
+- clicking buttons or links that represent business navigation
+- interacting with toast messages
+- validating toast messages
+- validating visible success messages
+- validating visible error messages
+- validating important page content
+- validating successful navigation
+- validating failure scenarios when present in the original flow
+
+When the test validates a success state, call capture_evidence immediately after the success validation.
+
+When the test validates an error state or failure message, call capture_evidence immediately after the failure validation.
+
+When clicking a text element, call capture_evidence after the click if the click changes the page, opens content, triggers a toast, opens a modal, or navigates.
+
+The generated test SHOULD wrap the business flow in try/except to capture failure evidence.
+
+If try/except is used, it MUST re-raise the original exception.
+
+Good failure evidence example:
+
+try:
+    page.goto("https://example.com")
+    capture_evidence("open_login_page")
+
+    page.get_by_test_id("submit").click()
+
+    expect(page.get_by_text("Required field")).to_be_visible()
+    capture_evidence("validate_required_field_message")
+
+except Exception:
+    page.screenshot(path=str(evidence_dir / "failure.png"))
+    raise
+
+Do NOT create screenshots with random names.
+
+Do NOT overwrite screenshots with the same filename.
+
+Do NOT save screenshots directly inside the main evidences folder.
+
+Always save screenshots inside a unique run folder.
+
+Good structure:
+
+evidences/run_20260702_164500/01_open_home_page.png
+evidences/run_20260702_164500/02_click_mascote_link.png
+evidences/run_20260702_164500/03_validate_success.png
+evidences/run_20260702_164500/failure.png
+
+ASSERTION RULES
+
+NEVER generate:
+
+expect(page.url()).to_include(...)
+
+This is invalid in Playwright Python.
+
+For URL validations, use one of these options:
+
+expect(page).to_have_url("**/expected-path")
+
+or:
+
+assert "expected-text" in page.url
+
+Use expect(page).to_have_url(...) when the URL pattern is clear.
+
+Use assert "... " in page.url when only a partial URL validation is possible.
+
+SELECTOR RULES
+
+Avoid fragile selectors whenever possible.
+
+Avoid:
+- locator("div")
+- locator("span")
+- nth()
+- css selectors without business meaning
+
+Prefer:
+- get_by_role()
+- get_by_text()
+- get_by_test_id()
+- get_by_label()
+- get_by_placeholder()
+
+Only keep fragile recorder selectors if there is no safer equivalent in the input script.
+
+COMMENTS RULES
+
+Use comments only inside the test function.
+
+Use comments only to describe business steps.
+
+Allowed comment style:
+
+## Open home page
+## Click Mascote link
+## Validate Mascote page content
+## Capture success evidence
+
 Never generate:
 - comments starting with a single # followed by text
 - comments starting with ###
@@ -137,7 +297,7 @@ FORBIDDEN
 - new_context
 - new_page
 - class
-- helper methods
+- helper methods outside the test function
 - def main
 - if __name__ == "__main__"
 - yield
@@ -150,10 +310,11 @@ FORBIDDEN
 - docstrings
 - markdown
 - explanations
-- external libraries
+- external libraries except pathlib and datetime
 - import pytest
 - import re
 - import time
+- expect(page.url()).to_include
 
 BDD COMPATIBILITY
 
