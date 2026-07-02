@@ -20,21 +20,42 @@ class Flow:
     base_dir: Path = Path("flows")
 
     @property
+    def flow_dir(self) -> Path:
+        return self.base_dir / self.name
+
+    @property
     def raw_path(self) -> Path:
-        return self.base_dir / f"{self.name}.py"
+        return self.flow_dir / f"{self.name}.py"
 
     @property
     def clean_path(self) -> Path:
-        return self.base_dir / f"{self.name}_clean.py"
+        return self.flow_dir / f"{self.name}_clean.py"
 
     @property
     def feature_path(self) -> Path:
-        return self.base_dir / f"{self.name}.feature"
+        return self.flow_dir / f"{self.name}.feature"
+
+    @property
+    def evidences_dir(self) -> Path:
+        return self.flow_dir / "evidences"
+
+    @property
+    def logs_dir(self) -> Path:
+        return self.flow_dir / "logs"
 
     def ensure_dirs(self) -> None:
-        self.base_dir.mkdir(parents=True, exist_ok=True)
+        self.flow_dir.mkdir(
+            parents=True,
+            exist_ok=True
+        )
 
+        self.evidences_dir.mkdir(
+            exist_ok=True
+        )
 
+        self.logs_dir.mkdir(
+            exist_ok=True
+        )
 # =============================
 # 🎥 CODEGEN (Playwright)
 # =============================
@@ -183,31 +204,59 @@ def main() -> None:
     print("🎥 Playwright Recorder + IA + BDD")
     print("=" * 50)
 
-    # ✅ cliente IA correto
-    ollama_client = ollama.OllamaClient(model="mistral:7b-instruct")
+    ollama_client = ollama.OllamaClient(
+        model="mistral:7b-instruct"
+    )
 
-    transformer_service = transformer.StepTransformer(ollama_client)
-    humaniz = humanizer.Humanizer(ollama_client)
+    transformer_service = transformer.StepTransformer(
+        ollama_client
+    )
+
+    humaniz = humanizer.Humanizer(
+        ollama_client
+    )
 
     while True:
         flow = ask_flow()
+
         if flow is None:
-            print("Saindo...")
+            print("👋 Saindo...")
             break
 
         flow.ensure_dirs()
+
+        print("\n📁 Estrutura criada:")
+        print(f"📂 {flow.flow_dir}")
+        print("   ├── evidences/")
+        print("   └── logs/")
+
+        print(f"\n📄 Recorder : {flow.raw_path}")
+        print(f"📄 Feature  : {flow.feature_path}")
 
         # 🎥 Codegen
         if not run_codegen(flow):
             continue
 
         # 🧠 IA
-        if ask_yes_no("\n🧠 Deseja generalizar e limpar o código com IA?"):
-            run_ia_transform(flow, transformer_service)
+        if ask_yes_no(
+            "\n🧠 Deseja generalizar e limpar o código com IA?"
+        ):
+            run_ia_transform(
+                flow,
+                transformer_service
+            )
 
         # 📄 BDD
-        if ask_yes_no("\n📄 Deseja gerar BDD?"):
-            run_bdd_generation(flow, humaniz)
+        if ask_yes_no(
+            "\n📄 Deseja gerar BDD?"
+        ):
+            run_bdd_generation(
+                flow,
+                humaniz
+            )
+
+        print("\n✅ Fluxo finalizado!")
+        print(f"📂 Pasta do fluxo: {flow.flow_dir}")
 
 
 if __name__ == "__main__":
