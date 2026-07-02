@@ -5,7 +5,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import ia_prompting.humanizer_bdd as humanizer
+import ia_prompting.prompts.humanizer_bdd as humanizer
 import ia_prompting.code_perform_IA as transformer
 import ia_prompting.client_ollama as ollama
 
