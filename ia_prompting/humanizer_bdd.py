@@ -4,11 +4,12 @@ class Humanizer:
 
     def steps_to_bdd(self, code: str) -> str:
         prompt = f"""
-Convert the following Playwright script into BDD (Gherkin format):
+Convert the following Playwright script into BDD (Gherkin format), be objective and concise:
 
 {code}
 
 Use:
-Given / When / Then
+- 1º Background
+- 2º Scenario name + Given / When / Then
 """
         return self.ollama.generate(prompt)

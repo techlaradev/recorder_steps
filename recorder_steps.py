@@ -5,9 +5,9 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-import humanizer_bdd as humanizer
-import code_perform_IA as transformer
-import client_ollama as ollama
+import ia_prompting.humanizer_bdd as humanizer
+import ia_prompting.code_perform_IA as transformer
+import ia_prompting.client_ollama as ollama
 
 
 # =============================
@@ -202,7 +202,7 @@ def main() -> None:
             continue
 
         # 🧠 IA
-        if ask_yes_no("\n🧠 Deseja limpar o código com IA?"):
+        if ask_yes_no("\n🧠 Deseja generalizar e limpar o código com IA?"):
             run_ia_transform(flow, transformer_service)
 
         # 📄 BDD
