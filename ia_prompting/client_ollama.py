@@ -1,7 +1,7 @@
 import requests
 
 class OllamaClient:
-    def __init__(self, model="mistral"):
+    def __init__(self, model="mistral-7b-instruct"):
         self.model = model
         self.url = "http://localhost:11434/api/generate"
 
