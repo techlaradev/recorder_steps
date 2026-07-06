@@ -1,39 +1,40 @@
-from pathlib import Path
+from ia_prompting.prompt_builder import PromptBuilder
 
 
-class PromptBuilder:
-    def __init__(self):
-        self.prompts_dir = Path(__file__).parent / "prompts"
+class Humanizer:
+    def __init__(self, ollama_client):
+        self.ollama = ollama_client
+        self.prompt_builder = PromptBuilder()
 
-    def build_transform_to_pytest_prompt(self, code: str) -> str:
-        return self._build_prompt(
-            file_name="transform_to_pytest.txt",
-            input_content=code
-        )
+    def steps_to_bdd(self, code: str) -> str:
+        prompt = self.prompt_builder.build_generate_bdd_prompt(code)
+        response = self.ollama.generate(prompt)
+        return self._clean_bdd(response)
 
-    def build_generate_bdd_prompt(self, code: str) -> str:
-        return self._build_prompt(
-            file_name="generate_bdd.txt",
-            input_content=code
-        )
+    def _clean_bdd(self, response: str) -> str:
+        response = response.strip()
 
-    def build_generate_steps_prompt(self, feature: str) -> str:
-        return self._build_prompt(
-            file_name="generate_steps.txt",
-            input_content=feature
-        )
+        forbidden_tokens = [
+            "```gherkin",
+            "```feature",
+            "```",
+            "gherkin",
+            "Gherkin"
+        ]
 
-    def _build_prompt(
-        self,
-        file_name: str,
-        input_content: str
-    ) -> str:
-        template_path = self.prompts_dir / file_name
+        for token in forbidden_tokens:
+            response = response.replace(token, "")
 
-        with template_path.open("r", encoding="utf-8") as file:
-            template = file.read()
+        ending_markers = [
+            "\nExplanation",
+            "\nNotes",
+            "\nSummary",
+            "\nThis scenario",
+            "\nThis feature",
+        ]
 
-        return template.replace(
-            "{{INPUT_SCRIPT}}",
-            input_content
-        )
+        for marker in ending_markers:
+            if marker in response:
+                response = response.split(marker, 1)[0]
+
+        return response.strip()
