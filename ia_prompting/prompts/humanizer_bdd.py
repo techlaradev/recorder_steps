@@ -4,55 +4,43 @@ class Humanizer:
 
     def steps_to_bdd(self, code: str) -> str:
         prompt = f"""
-Convert the following Playwright script into pure BDD.
+Transforme o código abaixo em um cenário BDD Gherkin.
 
-Rules:
-- Return only the BDD content.
-- Do not use markdown.
-- Do not use code fences.
-- Do not write 'gherkin'.
-- Do not write explanations.
-- Do not write comments.
-- Start directly with Background or Scenario.
-- Be concise and objective.
+Retorne apenas o conteúdo do feature.
 
-Script:
+Código:
 
 {code}
 """
+
         response = self.ollama.generate(prompt)
+
         return self._clean_bdd(response)
 
     def _clean_bdd(self, response: str) -> str:
         response = response.strip()
 
-        replacements = [
+        forbidden_tokens = [
             "```gherkin",
             "```feature",
             "```",
             "gherkin",
-            "Gherkin",
-            "Feature:",
+            "Gherkin"
         ]
 
-        for item in replacements:
-            response = response.replace(item, "")
+        for token in forbidden_tokens:
+            response = response.replace(token, "")
 
-        lines = []
+        ending_markers = [
+            "\nExplanation",
+            "\nNotes",
+            "\nSummary",
+            "\nThis scenario",
+            "\nThis feature",
+        ]
 
-        for line in response.splitlines():
-            line = line.rstrip()
+        for marker in ending_markers:
+            if marker in response:
+                response = response.split(marker, 1)[0]
 
-            if not line:
-                lines.append("")
-                continue
-
-            if line.startswith("#"):
-                continue
-
-            if line.lower().startswith("explanation"):
-                break
-
-            lines.append(line)
-
-        return "\n".join(lines).strip()
+        return response.strip()
