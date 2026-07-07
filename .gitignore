@@ -1,5 +1,5 @@
 flows
-_pycache__
+*__pycache__
 .pytest_cache
 .venv
 recorder_steps/ia_prompting/__pycache__
