@@ -269,6 +269,20 @@ Allowed comment style:
 ## Validate Mascote page content
 ## Capture success evidence
 
+
+CRITICAL
+
+The function signature MUST be:
+
+def test_<scenario_name>(page: Page):
+
+Never generate:
+
+def test_login():
+
+The page fixture parameter is mandatory.
+
+
 Never generate:
 - comments starting with a single # followed by text
 - comments starting with ###
@@ -335,6 +349,14 @@ click_username_field()
 execute_login_flow()
 process_authentication()
 yield page
+
+- NUNCA use o accessible name de uma imagem como validação de texto visível no body.
+- Se validar uma imagem, use expect(locator_da_imagem).to_be_visible().
+- Para validar texto visível, use apenas textos que aparecem explicitamente em elementos textuais da página.
+- Não transforme atributo alt, aria-label ou accessible name em expect(page.locator("body")).to_contain_text(...).
+- Se o código original usa get_by_role("img", name="..."), valide a imagem com to_be_visible().
+- Não crie uma segunda validação textual baseada no name da imagem.
+
 
 INPUT SCRIPT
 
