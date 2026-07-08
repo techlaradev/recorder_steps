@@ -15,6 +15,7 @@ import ia_prompting.client_ollama as ollama
 class ExecutionMode(Enum):
     SINGLE = "single"
     SUITE = "suite"
+    REPROCESS = "reprocess"
 
 @dataclass
 class Scenario:
@@ -100,35 +101,73 @@ def ask_yes_no(message: str) -> bool:
 
 
 def ask_execution_mode() -> tuple[ExecutionMode, str | None, str | None]:
+
     print("\n🎯 Como deseja executar?")
     print("1 - Teste isolado")
     print("2 - Bateria de testes")
+    print("3 - Reprocessar cenário existente")
 
-    option = input("Escolha 1 ou 2: ").strip()
+    option = input(
+        "Escolha 1, 2 ou 3: "
+    ).strip()
 
-    while option not in {"1", "2"}:
-        option = input("Escolha apenas 1 ou 2: ").strip()
+    while option not in {"1", "2", "3"}:
+        option = input(
+            "Escolha apenas 1, 2 ou 3: "
+        ).strip()
 
     if option == "1":
-        return ExecutionMode.SINGLE, None, None
+        return (
+            ExecutionMode.SINGLE,
+            None,
+            None,
+        )
 
-    plan_name = input("\nDigite o nome da bateria/test plan: ").strip()
+    if option == "3":
+        return (
+            ExecutionMode.REPROCESS,
+            None,
+            None,
+        )
+
+    # opção 2 continua normalmente
+
+    plan_name = input(
+        "\nDigite o nome da bateria/test plan: "
+    ).strip()
 
     while not plan_name:
-        plan_name = input("Digite um nome válido para a bateria/test plan: ").strip()
+        plan_name = input(
+            "Digite um nome válido para a bateria/test plan: "
+        ).strip()
 
-    plan_name = slugify(plan_name)
+    plan_name = slugify(
+        plan_name
+    )
 
     print("\n⚠️ Modo bateria selecionado.")
-    print("⚠️ A URL informada será reutilizada para todos os cenários desta bateria.")
-    print("⚠️ Ela não poderá ser alterada durante esta execução.")
+    print(
+        "⚠️ A URL informada será reutilizada para todos "
+        "os cenários desta bateria."
+    )
+    print(
+        "⚠️ Ela não poderá ser alterada durante esta execução."
+    )
 
-    shared_url = input("\nDigite a URL base da bateria: ").strip()
+    shared_url = input(
+        "\nDigite a URL base da bateria: "
+    ).strip()
 
     while not shared_url:
-        shared_url = input("Digite uma URL válida: ").strip()
+        shared_url = input(
+            "Digite uma URL válida: "
+        ).strip()
 
-    return ExecutionMode.SUITE, plan_name, shared_url
+    return (
+        ExecutionMode.SUITE,
+        plan_name,
+        shared_url,
+    )
 
 
 def ask_single_scenario() -> Scenario | None:
@@ -282,8 +321,31 @@ def run_ia_transform(
 
     except Exception as e:
         print(f"❌ Erro na IA: {e}")
-        return False
 
+        while True:
+
+            option = input(
+                "\n"
+                "[r] tentar novamente\n"
+                "[s] pular cenário\n"
+                "[q] abortar processamento\n"
+                "Escolha: "
+            ).strip().lower()
+
+            if option == "r":
+                return run_ia_transform(
+                    scenario,
+                    transformer_service,
+                )
+
+            if option == "s":
+                print(
+                    f"⏭️ Ignorado: {scenario.name}"
+                )
+                return False
+
+            if option == "q":
+                raise
 
 def process_clean_batch(
     scenarios: list[Scenario],
@@ -580,9 +642,7 @@ def main() -> None:
     print("🐞 Test Plan Orchestrator")
     print("=" * 70)
 
-    ollama_client = ollama.OllamaClient(
-        model="mistral:7b-instruct"
-    )
+    ollama_client = ollama.OllamaClient()
 
     transformer_service = transformer.StepTransformer(
         ollama_client
@@ -592,7 +652,45 @@ def main() -> None:
         ollama_client
     )
 
+
     mode, plan_name, shared_url = ask_execution_mode()
+
+    if mode == ExecutionMode.REPROCESS:
+
+        scenario_name = input(
+            "\nDigite o nome do cenário existente: "
+        ).strip()
+
+        if not scenario_name:
+            return
+
+        scenario = Scenario(
+            name=slugify(scenario_name),
+            url="",
+            mode=ExecutionMode.SINGLE,
+        )
+
+        if not scenario.raw_path.exists():
+            print(
+                f"❌ Cenário não encontrado:\n"
+                f"{scenario.raw_path}"
+            )
+            return
+
+        success = run_ia_transform(
+            scenario,
+            transformer_service,
+        )
+
+        if not success:
+            return
+
+        generate_single_bdd(
+            scenario,
+            humanizer_service,
+        )
+
+        return
 
     if mode == ExecutionMode.SINGLE:
         scenario = record_single_scenario()
