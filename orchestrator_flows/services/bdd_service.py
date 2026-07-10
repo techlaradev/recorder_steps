@@ -1,5 +1,5 @@
 from orchestrator_flows.domain.scenario import Scenario
-from ia_prompting.prompts.humanizer_bdd import Humanizer
+from orchestrator_flows.ia_prompting.prompts.humanizer_bdd import Humanizer
 
 
 class BddGeneratorService:

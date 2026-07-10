@@ -1,6 +1,6 @@
 import orchestrator_flows.flow_design.client_ollama as ollama
-import ia_prompting.code_perform_IA as transformer
-import ia_prompting.prompts.humanizer_bdd as humanizer
+import orchestrator_flows.ia_prompting.code_perform_IA as transformer
+import orchestrator_flows.ia_prompting.prompts.humanizer_bdd as humanizer
 
 from orchestrator_flows.flow_design.CLI_render import CliService
 from orchestrator_flows.services.bdd_service import BddGeneratorService

@@ -1,7 +1,7 @@
 import re
 
 from orchestrator_flows.domain.scenario import Scenario
-from ia_prompting.code_perform_IA import StepTransformer
+from orchestrator_flows.ia_prompting.code_perform_IA import StepTransformer
 
 
 class ScenarioTransformerService:

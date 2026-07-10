@@ -1,4 +1,4 @@
-from ia_prompting.prompts.transform_playwright import (
+from orchestrator_flows.ia_prompting.prompts.transform_playwright import (
     TransformPlaywright
 )
 
