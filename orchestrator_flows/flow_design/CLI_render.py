@@ -1,4 +1,4 @@
-
+from urllib.parse import urlparse
 
 from orchestrator_flows.domain.execution import ExecutionMode
 from orchestrator_flows.domain.scenario import Scenario
@@ -20,6 +20,46 @@ class CliService:
             ).strip().lower()
 
         return value == "s"
+
+    def is_valid_url(
+        self,
+        url: str,
+    ) -> bool:
+
+        if (
+            url.startswith("localhost:")
+            or url.startswith("127.0.0.1:")
+        ):
+            return True
+
+        try:
+            parsed = urlparse(url)
+
+            return (
+                parsed.scheme in {"http", "https"}
+                and bool(parsed.netloc)
+            )
+
+        except Exception:
+            return False
+
+    def ask_url(
+        self,
+        message: str,
+    ) -> str:
+
+        while True:
+            url = input(message).strip()
+
+            if self.is_valid_url(url):
+                return url
+
+            print("\n❌ URL inválida.")
+            print("Exemplos válidos:")
+            print("  https://google.com")
+            print("  https://www.youtube.com/watch?v=abc")
+            print("  localhost:3000")
+            print("  127.0.0.1:8000")
 
     def ask_execution_mode(
         self,
@@ -71,14 +111,9 @@ class CliService:
         print("\n⚠️ Modo bateria selecionado")
         print("⚠️ A URL será reutilizada em todos os cenários")
 
-        shared_url = input(
+        shared_url = self.ask_url(
             "\nDigite a URL base da bateria: "
-        ).strip()
-
-        while not shared_url:
-            shared_url = input(
-                "Digite uma URL válida: "
-            ).strip()
+        )
 
         return (
             ExecutionMode.SUITE,
@@ -99,14 +134,9 @@ class CliService:
 
         name = slugify(name)
 
-        url = input(
+        url = self.ask_url(
             "Digite a URL para iniciar: "
-        ).strip()
-
-        while not url:
-            url = input(
-                "Digite uma URL válida: "
-            ).strip()
+        )
 
         return Scenario(
             name=name,

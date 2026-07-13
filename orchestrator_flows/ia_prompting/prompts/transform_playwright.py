@@ -44,6 +44,8 @@ RULES
 PLAYWRIGHT OFFICIAL ASSERTION STYLE
 
 Prefer:
+NEVER create selectors, test ids, roles, text, URLs or assertions
+that do not exist in the input script.
 ...
 """
 
