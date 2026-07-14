@@ -10,7 +10,6 @@ from orchestrator_flows.services.recorder_service import RecorderService
 from orchestrator_flows.services.scenario_transformer_service import (
     ScenarioTransformerService,
 )
-from orchestrator_flows.services.regression_runner_service import run_regression_flow
 
 def main() -> None:
     

@@ -1,4 +1,6 @@
 from pathlib import Path
+from statistics import mode
+import subprocess
 
 from orchestrator_flows.domain.execution import ExecutionMode
 from orchestrator_flows.domain.scenario import Scenario
@@ -25,6 +27,10 @@ class FlowOrchestratorService:
     def run(self) -> None:
         mode, plan_name, shared_url = self.cli.ask_execution_mode()
 
+        if mode == ExecutionMode.REGRESSION:
+            self.run_regression_flow()
+            return
+            
         if mode == ExecutionMode.REPROCESS:
             self.run_reprocess_flow()
             return
@@ -118,3 +124,35 @@ class FlowOrchestratorService:
             return
 
         self.bdd_generator.generate_single(scenario)
+        
+
+    def run_regression_flow(self) -> None:
+        plan_name = self.cli.ask_regression_scenario_name()
+
+        if plan_name is None:
+            return
+
+        cleaned_dir = (
+            Path("flows")
+            / "test-plans"
+            / plan_name
+            / "cleaned"
+        )
+
+        if not cleaned_dir.exists():
+            print(
+                f"❌ Pasta cleaned não encontrada:\n"
+                f"{cleaned_dir}"
+            )
+            return
+
+        print(f"🚀 Executando regressão: {cleaned_dir}")
+
+        subprocess.run(
+            [
+                "pytest",
+                str(cleaned_dir),
+                "--headed"
+            ],
+            check=False
+        )

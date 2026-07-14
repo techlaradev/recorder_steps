@@ -161,3 +161,19 @@ class CliService:
         return slugify(
             scenario_name
         )
+        
+    def ask_regression_scenario_name(
+        self,
+    ) -> str | None:
+
+        scenario_name = input(
+            "\nDigite o nome do plano de teste para regressivo: "
+        ).strip()
+
+        if not scenario_name:
+            return None
+
+        return slugify(
+            scenario_name
+        )
+        
