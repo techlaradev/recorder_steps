@@ -7,3 +7,4 @@ class ExecutionMode(Enum):
     SINGLE = "single"
     SUITE = "suite"
     REPROCESS = "reprocess"
+    REGRESSION = "regression"

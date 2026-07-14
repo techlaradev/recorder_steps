@@ -33,14 +33,15 @@ class CliService:
         print("1 - Teste isolado")
         print("2 - Bateria de testes")
         print("3 - Reprocessar cenário existente")
+        print("4 - Regressivo de testes")
 
         option = input(
-            "\nEscolha 1, 2 ou 3: "
+            "\nEscolha 1, 2, 3 ou 4: "
         ).strip()
 
-        while option not in {"1", "2", "3"}:
+        while option not in {"1", "2", "3", "4"}:
             option = input(
-                "Escolha apenas 1, 2 ou 3: "
+                "Escolha apenas 1, 2, 3 ou 4: "
             ).strip()
 
         if option == "1":
@@ -53,6 +54,12 @@ class CliService:
         if option == "3":
             return (
                 ExecutionMode.REPROCESS,
+                None,
+                None,
+            )
+        if option == "4":
+            return (
+                ExecutionMode.REGRESSION,
                 None,
                 None,
             )
