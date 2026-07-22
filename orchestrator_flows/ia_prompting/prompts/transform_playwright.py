@@ -20,7 +20,7 @@ Example:
 from playwright.sync_api import Page, expect
 
 def test_example(page: Page):
-    ...
+     
 """
 
     SIGNATURE_RULES = """
@@ -37,7 +37,22 @@ RULES
 - Return ONLY Python code
 - Return exactly one test function
 - Use page: Page
-...
+- Detect manual intervention points.
+- Use pause_for_human(page, reason=" ") when required.
+- Never automate CAPTCHA, MFA, OTP, authenticator approvals, or similar security verifications.
+- Just import the class HumanIntervention from orchestrator_flows.services.humanintervention and call it when needed.
+If CAPTCHA, MFA, OTP, Authenticator approval,
+SMS code or Email verification is detected:
+
+Generate:
+
+HumanIntervention.required(
+    page,
+    reason="<clear explanation>"
+)
+
+Do not generate any other implementation.
+
 """
 
     ASSERTIONS = """
@@ -46,7 +61,7 @@ PLAYWRIGHT OFFICIAL ASSERTION STYLE
 Prefer:
 NEVER create selectors, test ids, roles, text, URLs or assertions
 that do not exist in the input script.
-...
+ 
 """
 
     CLICK_RULES = """
@@ -54,9 +69,9 @@ CLICK RULES
 
 Prefer selectors in this order:
 
-1. get_by_test_id(...)
-2. get_by_role(...)
-...
+1. get_by_test_id( )
+2. get_by_role( )
+ 
 """
 
     FORBIDDEN = """
@@ -65,7 +80,7 @@ FORBIDDEN
 - async
 - await
 - sync_playwright
-...
+ 
 """
 
     EVIDENCES = """
@@ -107,6 +122,55 @@ Capture screenshots only on meaningful business checkpoints.
 
 Keep the screenshots aligned with the business flow.
 """
+    HUMAN_INTERVENTION = """
+HUMAN INTERVENTION RULES
+
+If the input script contains any manual authentication,
+security challenge, or anti-bot verification step,
+do not automate it.
+
+Examples:
+
+- CAPTCHA
+- reCAPTCHA
+- hCaptcha
+- Cloudflare Turnstile
+- MFA
+- 2FA
+- OTP
+- SMS code
+- Email verification code
+- Authenticator app approval
+- Biometric validation
+- Security token approval
+- SSO approval requiring user interaction
+
+When one of these situations is detected,
+insert the following code exactly at the point
+where user interaction is required:
+
+HumanIntervention.required(
+    page,
+    reason="<clear explanation>"
+)
+
+Example:
+
+(
+    page,
+    reason="User must solve CAPTCHA manually."
+)
+
+Rules:
+
+- Never attempt to bypass security mechanisms.
+- Never generate code to defeat CAPTCHA.
+- Never invent human intervention points.
+- Only insert HumanIntervention.required() if the input script
+  clearly indicates a manual verification step.
+- Resume the business flow after the human intervention point.
+- always import: orchestrator_flows.services.human_intervention import HumanIntervention
+"""
 
     @classmethod
     def build_prompt(cls, code: str) -> str:
@@ -128,6 +192,8 @@ Keep the screenshots aligned with the business flow.
 {cls.EVIDENCES}
 
 {cls.OBJECTIVE}
+
+{cls.HUMAN_INTERVENTION}
 
 INPUT SCRIPT
 
