@@ -16,7 +16,7 @@ def main() -> None:
     
     
     print("=" * 70)
-    print("🐞 Test Plan Orchestrator")
+    print(" ⚜️ Orchestrator ⚜️")
     print("=" * 70)
 
     ollama_client = ollama.OllamaClient()

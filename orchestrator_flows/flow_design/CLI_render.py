@@ -71,7 +71,7 @@ class CliService:
 
         print("\n🎯 Como deseja executar?")
         print("1 - Teste isolado")
-        print("2 - Bateria de testes")
+        print("2 - Criar bateria de testes")
         print("3 - Reprocessar cenário existente")
         print("4 - Regressivo de testes")
 
