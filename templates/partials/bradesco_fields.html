@@ -1,0 +1,66 @@
+<div style="border:1px solid #8B4500; border-radius:var(--r-card); padding:16px;
+            background:rgba(139,69,0,.08); margin-bottom:4px;">
+  <div style="font-size:.72rem; font-weight:700; color:#FFA040; margin-bottom:14px; letter-spacing:.04em;">
+    🔶 CONFIGURAÇÃO BRADESCO AUTO
+  </div>
+
+  <div class="row g-2 mb-2">
+    <div class="col-6">
+      <label class="form-label" style="font-size:.75rem;">URL de Login (Keycloak)</label>
+      <input type="text" class="form-control form-control-sm" name="b_login_url"
+             placeholder="https://bradescoautohml.onefinancial.com.br/lgn/realms/bradescoautohml">
+    </div>
+    <div class="col-6">
+      <label class="form-label" style="font-size:.75rem;">URL do Portal</label>
+      <input type="text" class="form-control form-control-sm" name="b_portal_url"
+             placeholder="https://bradescoautohml.onefinancial.com.br">
+    </div>
+  </div>
+
+  <div class="row g-2 mb-2">
+    <div class="col-4">
+      <label class="form-label" style="font-size:.75rem;">Tipo de Usuário</label>
+      <select class="form-select form-select-sm" name="b_tipo_usuario">
+        <option value="B">B — Backoffice</option>
+        <option value="L">L — Lojista</option>
+        <option value="O">O — Operador</option>
+        <option value="T">T — Terceiro</option>
+        <option value="C">C — ColabBanco</option>
+      </select>
+    </div>
+    <div class="col-4">
+      <label class="form-label" style="font-size:.75rem;">Código de Perfil</label>
+      <input type="text" class="form-control form-control-sm" name="b_codigo_perfil"
+             value="115" placeholder="115">
+    </div>
+    <div class="col-4">
+      <label class="form-label" style="font-size:.75rem;">Nome do Usuário</label>
+      <input type="text" class="form-control form-control-sm" name="b_nome_usuario"
+             value="TESTE AUTO" placeholder="TESTE AUTO">
+    </div>
+  </div>
+
+  <div class="row g-2 mb-2">
+    <div class="col-6">
+      <label class="form-label" style="font-size:.75rem;">E-mail</label>
+      <input type="email" class="form-control form-control-sm" name="b_email"
+             placeholder="qa@accenture.com">
+    </div>
+    <div class="col-6">
+      <label class="form-label" style="font-size:.75rem;">Usuário Admin (CPF)</label>
+      <input type="text" class="form-control form-control-sm" name="b_admin_user"
+             placeholder="000000000100000000027541573108">
+    </div>
+  </div>
+
+  <div class="mb-0">
+    <label class="form-label" style="font-size:.75rem;">Senha Admin</label>
+    <input type="password" class="form-control form-control-sm" name="b_admin_password"
+           placeholder="••••••••">
+  </div>
+
+  <div style="font-size:.65rem; color:#FFA040; margin-top:10px; opacity:.8;">
+    ℹ️ Usuário criado com senha padrão <code>Aut@7020</code> e perfil <code>115</code>.
+    CPF é gerado aleatoriamente e impresso no log do teste.
+  </div>
+</div>

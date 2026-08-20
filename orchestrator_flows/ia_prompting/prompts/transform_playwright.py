@@ -88,39 +88,28 @@ EVIDENCE RULES
 
 Screenshots are mandatory.
 
-The generated test MUST capture evidence screenshots during execution.
+At the TOP of the test function, declare the evidences directory using __file__
+so screenshots always land inside the correct scenario folder:
 
-Use page.screenshot() after important business actions and validations.
+from pathlib import Path as _Path
+_EVIDENCES = _Path(__file__).parent / "evidences"
+_EVIDENCES.mkdir(exist_ok=True)
 
-At minimum capture:
+Use _EVIDENCES for every screenshot path:
 
+page.screenshot(path=str(_EVIDENCES / "01_home_page.png"))
+page.screenshot(path=str(_EVIDENCES / "02_login_filled.png"))
+page.screenshot(path=str(_EVIDENCES / "03_authenticated_area.png"))
+
+NEVER use bare relative paths like "evidences/01_home_page.png".
+ALWAYS use str(_EVIDENCES / "filename.png").
+
+Capture screenshots only on meaningful business checkpoints:
 - Initial page state
 - After navigation
 - After form submission
 - After important business transitions
 - Final successful state
-
-Screenshot filenames must be descriptive and readable.
-
-Examples:
-
-page.screenshot(
-    path="evidences/01_home_page.png"
-)
-
-page.screenshot(
-    path="evidences/02_login_filled.png"
-)
-
-page.screenshot(
-    path="evidences/03_authenticated_area.png"
-)
-
-Do not generate screenshots on every action.
-
-Capture screenshots only on meaningful business checkpoints.
-
-Keep the screenshots aligned with the business flow.
 """
     HUMAN_INTERVENTION = """
 HUMAN INTERVENTION RULES
@@ -156,7 +145,7 @@ HumanIntervention.required(
 
 Example:
 
-(
+HumanIntervention.required(
     page,
     reason="User must solve CAPTCHA manually."
 )
@@ -169,7 +158,7 @@ Rules:
 - Only insert HumanIntervention.required() if the input script
   clearly indicates a manual verification step.
 - Resume the business flow after the human intervention point.
-- always import: orchestrator_flows.services.human_intervention import HumanIntervention
+- always import: from orchestrator_flows.services.humanintervention import HumanIntervention
 """
 
     @classmethod

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% set steps = [
+  {"label": "1. Configurar", "state": "done"},
+  {"label": "2. Gravar",     "state": "active"},
+  {"label": "3. Processar",  "state": ""},
+  {"label": "4. Resultado",  "state": ""},
+] %}
+
+{% block content %}
+<div class="text-center mb-4">
+  {% if still_running %}
+    <div class="spinner-grow mb-3" role="status" style="width:2rem;height:2rem;color:var(--c-tab);"></div>
+    <h5 class="mb-1">Gravação em andamento</h5>
+    <p class="text-muted" style="font-size:.8rem;">O Playwright Codegen está aberto no navegador.</p>
+  {% else %}
+    <div style="font-size:2rem; margin-bottom:.5rem;">✅</div>
+    <h5 class="mb-1">Gravação encerrada</h5>
+    <p class="text-muted" style="font-size:.8rem;">O processo foi concluído automaticamente.</p>
+  {% endif %}
+</div>
+
+<div class="alert alert-light mb-4">
+  <div style="display:grid; grid-template-columns: 90px 1fr; gap: 6px 12px; font-size:.8rem;">
+    <span class="text-muted">Cenário</span>
+    <span class="fw-semibold" style="color:var(--c-title);">{{ scenario.name }}</span>
+    <span class="text-muted">URL</span>
+    <a href="{{ scenario.url }}" target="_blank" style="font-size:.8rem;">{{ scenario.url }}</a>
+  </div>
+</div>
+
+{% if still_running %}
+<p style="font-size:.8rem; color:var(--c-placeholder); margin-bottom:16px;">
+  Grave as ações no browser e clique em <strong style="color:var(--c-text);">Gravação concluída</strong> quando terminar.
+</p>
+{% endif %}
+
+<form method="POST" action="/stop-recording">
+  <button type="submit" class="btn btn-success w-100 mb-2">✅ Gravação concluída</button>
+</form>
+<a href="/reset" class="btn btn-outline-secondary w-100">❌ Cancelar</a>
+{% endblock %}

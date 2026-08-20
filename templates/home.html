@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% set steps = [
+  {"label": "1. Configurar", "state": "active"},
+  {"label": "2. Gravar",     "state": ""},
+  {"label": "3. Processar",  "state": ""},
+  {"label": "4. Resultado",  "state": ""},
+] %}
+
+{% block content %}
+<h5 class="mb-1">Modo de execução</h5>
+<p class="text-muted mb-4" style="font-size:.8rem;">Escolha como deseja iniciar o fluxo.</p>
+
+{% if error %}
+<div class="alert alert-danger py-2 mb-4">{{ error }}</div>
+{% endif %}
+
+<ul class="nav nav-tabs mb-0" id="modeTabs" role="tablist">
+  <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-single">🎯 Cenário único</button></li>
+  <li class="nav-item"><button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tab-reprocess">🔄 Reprocessar</button></li>
+  <li class="nav-item"><button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tab-suite">📦 Nova Bateria</button></li>
+  <li class="nav-item"><button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tab-run">▶️ Executar</button></li>
+  <li class="nav-item"><button class="nav-link"        data-bs-toggle="tab" data-bs-target="#tab-regression">🚀 Regressão</button></li>
+</ul>
+
+<div class="tab-content">
+
+  <!-- Cenário único -->
+  <div class="tab-pane fade show active" id="tab-single">
+    <form method="POST" action="/configure">
+      <input type="hidden" name="mode" value="single">
+
+      <div class="mb-3">
+        <label class="form-label">URL do sistema</label>
+        <input type="text" class="form-control" name="url"
+               placeholder="https://app.exemplo.com" required>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">Nome do cenário</label>
+        <input type="text" class="form-control" name="name"
+               placeholder="login-usuario" required>
+        <div class="form-text">Use letras minúsculas e hífens — ex: <code>checkout-completo</code></div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">🎬 Iniciar gravação</button>
+    </form>
+  </div>
+
+  <!-- Reprocessar -->
+  <div class="tab-pane fade" id="tab-reprocess">
+    {% set reprocessable = scenarios %}
+    {% if reprocessable %}
+      <p style="font-size:.8rem; color:var(--c-placeholder); margin-bottom:16px;">
+        Selecione o cenário para reprocessar com IA.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for sc in reprocessable %}
+        {% set border_color = '#cc0000' if sc.status == 'failed' else ('var(--c-border)' if sc.status == 'ok' else '#6c757d') %}
+        <a href="/reprocess/{{ sc.name }}"
+           style="display:flex; align-items:center; justify-content:space-between;
+                  padding:14px 16px;
+                  background:var(--c-bg);
+                  border:1px solid {{ border_color }};
+                  border-radius:var(--r-btn);
+                  text-decoration:none;
+                  transition: border-color .15s, background .15s;"
+           onmouseover="this.style.background='var(--c-surface)'"
+           onmouseout="this.style.background='var(--c-bg)'">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="fw-semibold" style="color:var(--c-title); font-size:.875rem;">{{ sc.name }}</span>
+              {% if sc.status == 'failed' %}
+                <span style="font-size:.6rem; font-weight:700; padding:2px 7px; border-radius:50px;
+                             background:#3d0000; color:#ff6b6b; letter-spacing:.04em;">❌ FALHOU</span>
+              {% elif sc.status == 'ok' %}
+                <span style="font-size:.6rem; font-weight:700; padding:2px 7px; border-radius:50px;
+                             background:#0d2b0d; color:#6fcf6f; letter-spacing:.04em;">✅ OK</span>
+              {% else %}
+                <span style="font-size:.6rem; font-weight:700; padding:2px 7px; border-radius:50px;
+                             background:#2a2a2a; color:#aaa; letter-spacing:.04em;">⏳ NÃO PROCESSADO</span>
+              {% endif %}
+            </div>
+            <div style="font-size:.68rem; color:var(--c-placeholder); margin-top:3px;">
+              <code style="font-size:.62rem;">{{ sc.path }}</code>
+            </div>
+          </div>
+          <span style="color:var(--c-primary); font-size:.8rem; font-weight:600; white-space:nowrap; margin-left:12px;">
+            🔄 Reprocessar
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light mt-2" style="font-size:.8rem;">
+        Nenhuma gravação encontrada em <code>flows/unity-test/</code>.<br>
+        Grave um cenário primeiro.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Nova Bateria (SUITE) -->
+  <div class="tab-pane fade" id="tab-suite">
+
+    {# ── Baterias existentes ──────────────────────────────────────────────── #}
+    {% if plans %}
+    <div style="margin-bottom:20px;">
+      <div style="font-size:.75rem; color:var(--c-placeholder); margin-bottom:8px;">
+        Baterias existentes — clique para adicionar um cenário:
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px;">
+        {% for plan in plans %}
+        <div style="display:flex; align-items:center; justify-content:space-between;
+                    padding:10px 14px;
+                    background:var(--c-bg);
+                    border:1px solid var(--c-border);
+                    border-radius:var(--r-btn);">
+          <div>
+            <span style="color:var(--c-title); font-weight:600; font-size:.85rem;">{{ plan.name }}</span>
+            <span style="color:var(--c-placeholder); font-size:.7rem; margin-left:8px;">
+              📄 {{ plan.count }} teste{{ 's' if plan.count != 1 else '' }}
+            </span>
+          </div>
+          <button type="button"
+                  onclick="selectPlan('{{ plan.name }}')"
+                  style="padding:5px 12px; border-radius:var(--r-btn);
+                         background:rgba(161,0,255,.12); border:1px solid var(--c-primary);
+                         color:var(--c-primary); font-size:.75rem; font-weight:600; cursor:pointer;">
+            ➕ Adicionar cenário
+          </button>
+        </div>
+        {% endfor %}
+      </div>
+      <hr>
+    </div>
+    {% endif %}
+
+    <form method="POST" action="/configure">
+      <input type="hidden" name="mode" value="suite">
+      <div class="mb-3">
+        <label class="form-label">Nome da bateria</label>
+        <input type="text" class="form-control" name="plan" id="plan-input"
+               value="{{ open_plan }}"
+               placeholder="checkout-suite" required>
+        <div class="form-text">Cria ou adiciona cenários a um test-plan existente.</div>
+      </div>
+
+      {# Cenários já existentes nesta bateria (quando vem do botão "Adicionar mais") #}
+      {% if plan_scenarios %}
+      <div style="margin-bottom:14px;">
+        <div style="font-size:.75rem; color:var(--c-placeholder); margin-bottom:6px;">
+          Cenários já nesta bateria:
+        </div>
+        <div style="display:flex; flex-direction:column; gap:5px;">
+          {% for sc in plan_scenarios %}
+          <div style="display:flex; align-items:center; gap:8px; padding:6px 10px;
+                      border:1px solid var(--c-border); border-radius:var(--r-btn);
+                      font-size:.76rem; background:var(--c-bg);">
+            <span>{{ '✅' if sc.processed else '⏳' }}</span>
+            <span style="color:var(--c-title);">{{ sc.name }}</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="mb-3">
+        <label class="form-label">Nome do {{ 'novo ' if plan_scenarios else '' }}cenário</label>
+        <input type="text" class="form-control" name="name"
+               placeholder="checkout-step-0{{ (plan_scenarios | length + 1) if plan_scenarios else '1' }}" required>
+      </div>
+      <div class="mb-4">
+        <label class="form-label">URL do sistema</label>
+        <input type="text" class="form-control" name="url"
+               placeholder="https://app.exemplo.com" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">
+        🎬 {{ 'Adicionar cenário à bateria' if plan_scenarios else 'Gravar cenário da bateria' }}
+      </button>
+    </form>
+  </div>
+
+  <!-- Executar cenário isolado -->
+  <div class="tab-pane fade" id="tab-run">
+    {% if scenarios %}
+      <p style="font-size:.8rem; color:var(--c-placeholder); margin-bottom:16px;">
+        Selecione um cenário para executar o teste.
+      </p>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for sc in scenarios %}
+        <a href="/run-test/{{ sc.name }}"
+           style="display:flex; align-items:center; justify-content:space-between;
+                  padding:14px 16px;
+                  background:var(--c-bg);
+                  border:1px solid var(--c-border);
+                  border-radius:var(--r-btn);
+                  text-decoration:none;
+                  transition: border-color .15s, background .15s;"
+           onmouseover="this.style.borderColor='var(--c-primary)'; this.style.background='var(--c-surface)'"
+           onmouseout="this.style.borderColor='var(--c-border)'; this.style.background='var(--c-bg)'">
+          <div>
+            <div class="fw-semibold" style="color:var(--c-title); font-size:.875rem;">{{ sc.name }}</div>
+            <div style="font-size:.7rem; color:var(--c-placeholder); margin-top:3px;">
+              <code style="font-size:.65rem;">{{ sc.path }}</code>
+            </div>
+          </div>
+          <span style="color:var(--c-primary); font-size:.8rem; font-weight:600; white-space:nowrap; margin-left:12px;">
+            ▶️ Executar
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="alert alert-light mt-2" style="font-size:.8rem;">
+        Nenhum cenário processado encontrado em <code>flows/unity-test/</code>.<br>
+        Grave e processe um cenário para que ele apareça aqui.
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Regressão -->
+  <div class="tab-pane fade" id="tab-regression">
+    {% if plans %}
+      <p style="font-size:.8rem; color:var(--c-placeholder); margin-bottom:16px;">
+        Selecione uma bateria para executar os testes.
+      </p>
+
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for plan in plans %}
+        <a href="/regression/{{ plan.name }}"
+           style="display:flex; align-items:center; justify-content:space-between;
+                  padding:14px 16px;
+                  background:var(--c-bg);
+                  border:1px solid var(--c-border);
+                  border-radius:var(--r-btn);
+                  text-decoration:none;
+                  transition: border-color .15s, background .15s;"
+           onmouseover="this.style.borderColor='var(--c-primary)'; this.style.background='var(--c-surface)'"
+           onmouseout="this.style.borderColor='var(--c-border)'; this.style.background='var(--c-bg)'">
+          <div>
+            <div class="fw-semibold" style="color:var(--c-title); font-size:.875rem;">{{ plan.name }}</div>
+            <div style="font-size:.7rem; color:var(--c-placeholder); margin-top:3px;">
+              📄 {{ plan.count }} teste{{ 's' if plan.count != 1 else '' }} &nbsp;·&nbsp;
+              <code style="font-size:.65rem;">{{ plan.path }}</code>
+            </div>
+          </div>
+          <span style="color:var(--c-primary); font-size:.8rem; font-weight:600; white-space:nowrap; margin-left:12px;">
+            ▶️ Executar
+          </span>
+        </a>
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <div class="alert alert-light mt-2" style="font-size:.8rem;">
+        Nenhuma bateria encontrada em <code>flows/test-plans/</code>.<br>
+        Use a aba <strong>📦 Nova Bateria</strong> para criar uma.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+  function selectPlan(name) {
+    // Redireciona com ?plan= para carregar os cenários existentes e abrir a aba
+    window.location.href = '/?plan=' + encodeURIComponent(name);
+  }
+
+  {% if open_plan %}
+  // Abre a aba "Nova Bateria" automaticamente quando vem com ?plan=
+  document.addEventListener('DOMContentLoaded', function () {
+    var suiteTab = document.querySelector('[data-bs-target="#tab-suite"]');
+    if (suiteTab) { suiteTab.click(); }
+  });
+  {% endif %}
+</script>
+{% endblock %}

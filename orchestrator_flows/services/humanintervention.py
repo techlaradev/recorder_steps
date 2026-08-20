@@ -1,5 +1,7 @@
+import inspect
 import tkinter as tk
 from datetime import datetime
+from pathlib import Path
 from playwright.sync_api import Page
 
 
@@ -12,12 +14,16 @@ class HumanIntervention:
         reason: str,
     ) -> None:
 
-        timestamp = datetime.now().strftime(
-            "%Y%m%d_%H%M%S"
-        )
+        # Resolve evidences dir relative to the calling test file,
+        # so screenshots always land inside the correct scenario folder.
+        caller_file = Path(inspect.stack()[1].filename)
+        evidences_dir = caller_file.parent / "evidences"
+        evidences_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
         page.screenshot(
-            path=f"evidences/human_intervention_{timestamp}.png"
+            path=str(evidences_dir / f"human_intervention_{timestamp}.png")
         )
 
         popup = tk.Tk()

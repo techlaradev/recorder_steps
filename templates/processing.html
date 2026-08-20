@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% set steps = [
+  {"label": "1. Configurar", "state": "done"},
+  {"label": "2. Gravar",     "state": "done"},
+  {"label": "3. Processar",  "state": "active"},
+  {"label": "4. Resultado",  "state": ""},
+] %}
+
+{% block content %}
+<h5 class="mb-1">Processamento com IA</h5>
+<p class="text-muted mb-4" style="font-size:.8rem;">
+  Cenário: <code>{{ scenario.name }}</code>
+</p>
+
+<form method="POST" action="/run-process" data-loading>
+  <div class="mb-4" style="display:flex; flex-direction:column; gap:16px;">
+
+    <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; padding:16px; background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-btn);">
+      <input class="form-check-input mt-1 flex-shrink-0" type="checkbox" name="transform" checked>
+      <div>
+        <div class="fw-semibold" style="color:var(--c-title); margin-bottom:3px;">🧠 Limpar código com IA</div>
+        <div class="text-muted" style="font-size:.75rem;">Transforma o script gravado em um teste pytest limpo e organizado.</div>
+      </div>
+    </label>
+
+    <label style="display:flex; align-items:flex-start; gap:12px; cursor:pointer; padding:16px; background:var(--c-bg); border:1px solid var(--c-border); border-radius:var(--r-btn);">
+      <input class="form-check-input mt-1 flex-shrink-0" type="checkbox" name="bdd" checked>
+      <div>
+        <div class="fw-semibold" style="color:var(--c-title); margin-bottom:3px;">📄 Gerar BDD (Gherkin)</div>
+        <div class="text-muted" style="font-size:.75rem;">Cria o arquivo <code>.feature</code> com cenários Given/When/Then.</div>
+      </div>
+    </label>
+
+  </div>
+
+  <hr>
+  <button type="submit" class="btn btn-primary w-100">▶️ Processar</button>
+</form>
+{% endblock %}

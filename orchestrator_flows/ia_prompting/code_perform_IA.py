@@ -10,7 +10,7 @@ class StepTransformer:
 
     def transform_to_playwright(
         self,
-        code: str
+        code: str,
     ) -> str:
 
         prompt = self._build_prompt(code)
@@ -29,12 +29,10 @@ class StepTransformer:
 
     def _build_prompt(
         self,
-        code: str
+        code: str,
     ) -> str:
 
-        return TransformPlaywright.build_prompt(
-            code
-        )
+        return TransformPlaywright.build_prompt(code)
 
     def _extract_python_code(
         self,

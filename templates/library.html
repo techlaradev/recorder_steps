@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block max_width %}1100px{% endblock %}
+
+{% set steps = [] %}
+
+{% block content %}
+
+<!-- Cabeçalho da biblioteca -->
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+  <div>
+    <h5 class="mb-1">📸 Biblioteca de Evidências</h5>
+    <p class="text-muted mb-0" style="font-size:.78rem;">
+      {% if library %}
+        {{ library | length }} unidade{{ 's' if library | length != 1 else '' }} ·
+        {{ library | sum(attribute='count') }} screenshot{{ 's' if library | sum(attribute='count') != 1 else '' }}
+      {% else %}
+        Nenhuma evidência encontrada.
+      {% endif %}
+    </p>
+  </div>
+  <a href="/" class="btn btn-outline-light btn-sm">← Voltar</a>
+</div>
+
+{% if not library %}
+  <div class="alert alert-light">
+    Nenhuma evidência encontrada em <code>flows/</code>.<br>
+    Execute testes para que os screenshots sejam capturados.
+  </div>
+{% endif %}
+
+<!-- Unidades de teste -->
+{% for unit in library %}
+<details open style="margin-bottom:20px;">
+  <summary style="
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    padding: 12px 16px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-card);
+    list-style: none;
+    user-select: none;
+  ">
+    <!-- Tipo badge -->
+    {% if unit.type == 'unity' %}
+      <span style="font-size:.6rem; font-weight:700; padding:2px 8px; border-radius:50px;
+                   background:rgba(161,0,255,.2); color:var(--c-tab); white-space:nowrap;">
+        UNITÁRIO
+      </span>
+    {% else %}
+      <span style="font-size:.6rem; font-weight:700; padding:2px 8px; border-radius:50px;
+                   background:rgba(0,100,200,.25); color:#80c8ff; white-space:nowrap;">
+        BATERIA
+      </span>
+    {% endif %}
+
+    <!-- Nome -->
+    <span class="fw-semibold" style="color:var(--c-title); font-size:.9rem; flex:1;">
+      {{ unit.name }}
+    </span>
+
+    <!-- Contagem -->
+    <span style="font-size:.72rem; color:var(--c-placeholder);">
+      {{ unit.count }} screenshot{{ 's' if unit.count != 1 else '' }}
+    </span>
+
+    <!-- Seta -->
+    <span style="color:var(--c-primary); font-size:.8rem;">▾</span>
+  </summary>
+
+  <!-- Grid de imagens -->
+  <div style="
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 12px;
+    padding: 16px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-top: none;
+    border-radius: 0 0 var(--r-card) var(--r-card);
+  ">
+    {% for img in unit.images %}
+    <div style="
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-btn);
+      overflow: hidden;
+      background: var(--c-surface);
+      transition: border-color .15s;
+    "
+    onmouseover="this.style.borderColor='var(--c-primary)'"
+    onmouseout="this.style.borderColor='var(--c-border)'">
+
+      <!-- Thumbnail clicável -->
+      <a href="/evidence-image?path={{ img.path | urlencode }}" target="_blank">
+        <img
+          src="/evidence-image?path={{ img.path | urlencode }}"
+          alt="{{ img.name }}"
+          loading="lazy"
+          style="width:100%; height:120px; object-fit:cover; display:block;
+                 border-bottom:1px solid var(--c-border);">
+      </a>
+
+      <!-- Nome do arquivo -->
+      <div style="
+        padding: 5px 8px;
+        font-size: .6rem;
+        color: var(--c-placeholder);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 1.4;
+      " title="{{ img.name }}">
+        {{ img.name }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</details>
+{% endfor %}
+
+{% endblock %}

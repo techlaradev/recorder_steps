@@ -1,0 +1,11 @@
+{
+  "login_url":      "https://bradescoautohml.onefinancial.com.br/lgn/realms/bradescoautohml",
+  "portal_url":     "https://bradescoautohml.onefinancial.com.br",
+  "admin_user":     "000000000100000000027541573108",
+  "admin_password": "",
+  "tipo_usuario":   "B",
+  "codigo_perfil":  "115",
+  "nome_usuario":   "TESTE AUTO",
+  "email":          "qa-auto@accenture.com",
+  "senha_usuario":  "Aut@7020"
+}

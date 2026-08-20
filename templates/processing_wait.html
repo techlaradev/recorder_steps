@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% set steps = [
+  {"label": "1. Configurar", "state": "done"},
+  {"label": "2. Gravar",     "state": "done"},
+  {"label": "3. Processar",  "state": "active"},
+  {"label": "4. Resultado",  "state": ""},
+] %}
+
+{% block content %}
+<div class="text-center" style="padding: 24px 0;">
+  <div class="spinner-border mb-4" style="width:3rem;height:3rem;color:var(--c-primary);"></div>
+
+  <h5 class="mb-2">Processando com IA…</h5>
+  <p class="text-muted" style="font-size:.82rem; margin-bottom:4px;">
+    Cenário: <code>{{ scenario.name }}</code>
+  </p>
+  <p class="text-muted" style="font-size:.75rem;">
+    O modelo pode levar alguns minutos. Aguarde sem fechar esta aba.
+  </p>
+
+  <div id="dots" style="margin-top:20px; font-size:1.4rem; letter-spacing:.3rem; color:var(--c-primary);">
+    ···
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Anima os pontinhos
+  const dots = document.getElementById('dots');
+  const frames = ['·  ', '·· ', '···', ' ··', '  ·'];
+  let i = 0;
+  setInterval(() => { dots.textContent = frames[i++ % frames.length]; }, 400);
+
+  // Polling: verifica a cada 3 s se o job terminou
+  async function poll() {
+    try {
+      const resp = await fetch('/api/job-status');
+      const data = await resp.json();
+      if (data.status === 'done') {
+        window.location.href = '/results';
+        return;
+      }
+      if (data.status === 'unknown') {
+        window.location.href = '/';
+        return;
+      }
+    } catch (_) { /* continua tentando */ }
+    setTimeout(poll, 3000);
+  }
+
+  setTimeout(poll, 3000);
+</script>
+{% endblock %}

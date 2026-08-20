@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% set steps = [
+  {"label": "1. Configurar", "state": "done"},
+  {"label": "2. Gravar",     "state": "done"},
+  {"label": "3. Processar",  "state": "done"},
+  {"label": "4. Resultado",  "state": "active"},
+] %}
+
+{% block content %}
+<h5 class="mb-1">Resultado</h5>
+<p class="text-muted mb-4" style="font-size:.8rem;">Cenário / Bateria: <code>{{ plan }}</code></p>
+
+<div class="alert {{ 'alert-success' if passed else 'alert-danger' }} mb-4">
+  {{ '✅ Todos os testes passaram.' if passed else '❌ Alguns testes falharam.' }}
+</div>
+
+<pre class="p-3 mb-4" style="max-height:420px; overflow-y:auto; font-size:.72rem;">{{ output }}</pre>
+
+<div style="display:flex; gap:10px; margin-bottom:12px;">
+  <a href="{{ evidences_url or ('/regression/' + plan + '/evidences') }}"
+     class="btn btn-secondary" style="flex:1; text-align:center;">
+    📸 Ver Evidências
+  </a>
+  <a href="{{ back_url or '/reset' }}" class="btn btn-primary" style="flex:1; text-align:center;">
+    🔁 Nova execução
+  </a>
+</div>
+{% endblock %}
