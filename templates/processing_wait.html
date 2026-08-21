@@ -27,19 +27,20 @@
 
 {% block scripts %}
 <script>
-  // Anima os pontinhos
+  const JOB_ID = {{ job_id | tojson }};
+
   const dots = document.getElementById('dots');
   const frames = ['·  ', '·· ', '···', ' ··', '  ·'];
   let i = 0;
   setInterval(() => { dots.textContent = frames[i++ % frames.length]; }, 400);
 
-  // Polling: verifica a cada 3 s se o job terminou
   async function poll() {
+    if (!JOB_ID) { window.location.href = '/'; return; }
     try {
-      const resp = await fetch('/api/job-status');
+      const resp = await fetch('/api/job-status/' + JOB_ID);
       const data = await resp.json();
       if (data.status === 'done') {
-        window.location.href = '/results';
+        window.location.href = '/results/' + JOB_ID;
         return;
       }
       if (data.status === 'unknown') {

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% set steps = [
+  {"label": "1. Configurar", "state": "done"},
+  {"label": "2. Gravar",     "state": "done"},
+  {"label": "3. Processar",  "state": "active"},
+  {"label": "4. Resultado",  "state": ""},
+] %}
+
+{% block content %}
+
+{# Cabeçalho #}
+<div style="margin-bottom:20px;">
+  <div style="font-size:.65rem; font-weight:700; color:var(--c-tab);
+              letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px;">
+    📦 Processando bateria em paralelo
+  </div>
+  <div style="font-size:1rem; font-weight:700; color:var(--c-title);">{{ plan }}</div>
+  <p style="font-size:.78rem; color:var(--c-placeholder); margin-top:6px; margin-bottom:0;">
+    Todos os cenários são enviados à IA simultaneamente. Acompanhe o progresso abaixo.
+  </p>
+</div>
+
+{# Barra de progresso geral #}
+<div style="margin-bottom:18px;">
+  <div style="display:flex; justify-content:space-between; margin-bottom:4px;
+              font-size:.7rem; color:var(--c-placeholder);">
+    <span id="progress-label">Iniciando…</span>
+    <span id="progress-pct">0%</span>
+  </div>
+  <div style="background:var(--c-border); border-radius:50px; height:6px; overflow:hidden;">
+    <div id="progress-bar"
+         style="background:var(--c-primary); height:100%; width:0%;
+                transition:width .4s ease; border-radius:50px;"></div>
+  </div>
+</div>
+
+{# Lista de cenários — preenchida via JS #}
+<div id="scenarios-list" style="display:flex; flex-direction:column; gap:7px; margin-bottom:24px;">
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const JOB_ID = {{ job_id | tojson }};
+const PLAN   = {{ plan   | tojson }};
+
+const listEl      = document.getElementById('scenarios-list');
+const progressBar = document.getElementById('progress-bar');
+const progressLbl = document.getElementById('progress-label');
+const progressPct = document.getElementById('progress-pct');
+
+/* ── renderização ─────────────────────────────────────────────── */
+function statusIcon(sc) {
+  if (sc.status === 'pending') {
+    return `<span style="opacity:.3; font-size:.75rem;">○</span>`;
+  }
+  if (sc.status === 'running') {
+    return `<span class="spinner-border spinner-border-sm" style="color:var(--c-primary);"></span>`;
+  }
+  return sc.ok ? '✅' : '❌';
+}
+
+function statusLabel(sc) {
+  if (sc.status === 'pending') return '<span style="color:var(--c-placeholder);font-size:.68rem;">aguardando</span>';
+  if (sc.status === 'running') return '<span style="color:var(--c-primary);font-size:.68rem;">processando…</span>';
+  if (sc.ok) return '<span style="color:#6fcf6f;font-size:.68rem;">concluído</span>';
+  return '<span style="color:#ff6b6b;font-size:.68rem;">erro</span>';
+}
+
+function borderColor(sc) {
+  if (sc.status === 'done' && sc.ok)  return 'rgba(13,122,78,.45)';
+  if (sc.status === 'done' && !sc.ok) return 'rgba(180,0,0,.45)';
+  if (sc.status === 'running')        return 'rgba(161,0,255,.4)';
+  return 'var(--c-border)';
+}
+
+function render(scenarios) {
+  listEl.innerHTML = scenarios.map(sc => `
+    <div style="display:flex; align-items:center; gap:12px; padding:10px 14px;
+                border:1px solid ${borderColor(sc)}; border-radius:var(--r-btn);
+                background:var(--c-bg); font-size:.82rem; transition:border-color .4s;">
+      <span style="width:22px; text-align:center; flex-shrink:0;">${statusIcon(sc)}</span>
+      <span style="color:var(--c-title); flex:1; font-weight:500;">${sc.name}</span>
+      ${statusLabel(sc)}
+    </div>
+  `).join('');
+
+  /* barra de progresso */
+  const total = scenarios.length;
+  const done  = scenarios.filter(s => s.status === 'done').length;
+  const run   = scenarios.filter(s => s.status === 'running').length;
+  const pct   = total ? Math.round((done / total) * 100) : 0;
+
+  progressBar.style.width = pct + '%';
+  progressPct.textContent = pct + '%';
+
+  if (done === 0 && run === 0) {
+    progressLbl.textContent = 'Iniciando…';
+  } else if (done < total) {
+    progressLbl.textContent = `${run} processando • ${done} de ${total} concluídos`;
+  } else {
+    progressLbl.textContent = `${done} de ${total} concluídos`;
+  }
+}
+
+/* ── polling ──────────────────────────────────────────────────── */
+async function poll() {
+  try {
+    const resp = await fetch('/api/batch-status/' + JOB_ID);
+    const data = await resp.json();
+
+    if (data.status === 'unknown') {
+      window.location.href = '/';
+      return;
+    }
+
+    const scenarios = data.scenarios || [];
+    render(scenarios);
+
+    if (data.status === 'done') {
+      /* Navega para a tela de resultado do batch */
+      window.location.href = '/batch-result/' + JOB_ID;
+      return;
+    }
+
+  } catch (_) { /* rede instável — tenta de novo */ }
+
+  setTimeout(poll, 2000);
+}
+
+/* arranca após 800ms para dar tempo das threads iniciarem */
+setTimeout(poll, 800);
+</script>
+{% endblock %}

@@ -4,7 +4,7 @@ import requests
 
 
 class OllamaClient:
-    def __init__(self, model="qwen2.5-coder:14b"):
+    def __init__(self, model="llama3.1"):
         self.model = model
         self.base_url = "http://localhost:11434"
         self.url = f"{self.base_url}/api/generate"

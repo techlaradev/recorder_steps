@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% set steps = [
+  {"label": "1. Configurar", "state": "done"},
+  {"label": "2. Gravar",     "state": "done"},
+  {"label": "3. Processar",  "state": "active"},
+  {"label": "4. Resultado",  "state": ""},
+] %}
+
+{% block content %}
+
+<div style="margin-bottom:20px;">
+  <div style="font-size:.65rem; font-weight:700; color:#f0ad4e;
+              letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px;">
+    ⚠️ Sessão expirada
+  </div>
+  <h5 style="color:var(--c-title); margin-bottom:4px;">Continuar processamento</h5>
+  <p style="font-size:.8rem; color:var(--c-placeholder); margin:0;">
+    Encontramos gravações prontas para processar. Escolha o que deseja continuar:
+  </p>
+</div>
+
+{# ── Cenários SINGLE ── #}
+{% if pending.single %}
+<div style="margin-bottom:24px;">
+  <div style="font-size:.7rem; font-weight:700; color:var(--c-tab);
+              letter-spacing:.06em; text-transform:uppercase; margin-bottom:10px;">
+    🎯 Cenários isolados
+  </div>
+  <div style="display:flex; flex-direction:column; gap:8px;">
+    {% for sc in pending.single %}
+    <div style="display:flex; align-items:center; justify-content:space-between;
+                padding:12px 16px;
+                border:1px solid var(--c-border); border-radius:var(--r-btn);
+                background:var(--c-bg);">
+      <div>
+        <div style="font-weight:600; color:var(--c-title); font-size:.85rem;">{{ sc.name }}</div>
+        <div style="font-size:.68rem; color:var(--c-placeholder); margin-top:2px;">
+          🎬 gravado · aguardando IA
+        </div>
+      </div>
+      <a href="/reprocess/{{ sc.name }}"
+         style="padding:7px 14px; border-radius:var(--r-btn);
+                background:var(--c-primary); color:#fff;
+                font-size:.78rem; font-weight:600; text-decoration:none; white-space:nowrap;">
+        ⚙️ Processar
+      </a>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# ── Baterias SUITE ── #}
+{% if pending.suite %}
+<div style="margin-bottom:24px;">
+  <div style="font-size:.7rem; font-weight:700; color:var(--c-tab);
+              letter-spacing:.06em; text-transform:uppercase; margin-bottom:10px;">
+    📦 Baterias com cenários pendentes
+  </div>
+  <div style="display:flex; flex-direction:column; gap:8px;">
+    {% for plan in pending.suite %}
+    <div style="display:flex; align-items:center; justify-content:space-between;
+                padding:12px 16px;
+                border:1px solid var(--c-border); border-radius:var(--r-btn);
+                background:var(--c-bg);">
+      <div>
+        <div style="font-weight:600; color:var(--c-title); font-size:.85rem;">{{ plan.name }}</div>
+        <div style="font-size:.68rem; color:var(--c-placeholder); margin-top:2px;">
+          ⏳ {{ plan.pending }} cenário{{ 's' if plan.pending != 1 else '' }} aguardando IA
+        </div>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <a href="/suite-recorded?plan={{ plan.name }}"
+           style="padding:7px 12px; border-radius:var(--r-btn);
+                  background:rgba(161,0,255,.12); border:1px solid var(--c-primary);
+                  color:var(--c-primary); font-size:.75rem; font-weight:600;
+                  text-decoration:none; white-space:nowrap;">
+          ➕ Gravar mais
+        </a>
+        <a href="/process-plan/{{ plan.name }}"
+           style="padding:7px 12px; border-radius:var(--r-btn);
+                  background:var(--c-primary); color:#fff;
+                  font-size:.75rem; font-weight:600; text-decoration:none; white-space:nowrap;">
+          ⚙️ Processar todos
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{# Nenhuma gravação pendente #}
+{% if not pending.single and not pending.suite %}
+<div class="alert alert-light" style="font-size:.82rem;">
+  Nenhuma gravação pendente encontrada.<br>
+  <a href="/" style="color:var(--c-primary);">← Voltar ao início</a>
+</div>
+{% endif %}
+
+<hr style="margin:20px 0;">
+<a href="/reset" class="btn btn-outline-secondary w-100" style="font-size:.8rem;">
+  ← Voltar ao início
+</a>
+
+{% endblock %}

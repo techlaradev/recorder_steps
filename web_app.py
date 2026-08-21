@@ -1,15 +1,28 @@
 import json
+import re as _re
 import subprocess
 import sys
 import threading
+import time as _time
 import uuid as _uuid
 from pathlib import Path
+from urllib.parse import quote as _url_quote
+
+# Carrega variáveis do .env se existir (sem dependência de python-dotenv)
+_env_file = Path(__file__).parent / ".env"
+if _env_file.exists():
+    import os as _os_env
+    for _line in _env_file.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _, _v = _line.partition("=")
+            _os_env.environ.setdefault(_k.strip(), _v.strip())
 
 from flask import Flask, jsonify, redirect, render_template, request, send_file, session, url_for
 
 from orchestrator_flows.domain.execution import ExecutionMode
 from orchestrator_flows.domain.scenario import Scenario
-from orchestrator_flows.flow_design.client_ollama import OllamaClient
+from orchestrator_flows.flow_design.client_claude import ClaudeClient
 from orchestrator_flows.ia_prompting.code_perform_IA import StepTransformer
 from orchestrator_flows.ia_prompting.prompts.humanizer_bdd import Humanizer
 from orchestrator_flows.services.bdd_service import BddGeneratorService
@@ -17,8 +30,81 @@ from orchestrator_flows.services.scenario_transformer_service import (
     ScenarioTransformerService,
 )
 
+import os as _os
 app = Flask(__name__)
-app.secret_key = "orchestrator-local"
+
+
+def _load_secret_key() -> bytes:
+    """Retorna a chave de sessão — persistente entre restartes."""
+    env_key = _os.environ.get("ORCHESTRATOR_SECRET")
+    if env_key:
+        return env_key.encode()
+    key_file = Path(".secret_key")
+    if key_file.exists():
+        return key_file.read_bytes()
+    key = _os.urandom(32)
+    key_file.write_bytes(key)
+    return key
+
+
+app.secret_key = _load_secret_key()
+
+
+def _pending_processing() -> dict:
+    """Retorna cenários SINGLE e planos SUITE que têm gravação mas ainda não foram processados."""
+    # SINGLE: raw existe, test_*.py NÃO existe
+    single = []
+    base_single = Path("flows") / "unity-test"
+    if base_single.exists():
+        for d in sorted(base_single.iterdir()):
+            if not d.is_dir():
+                continue
+            raw = d / f"{d.name}.py"
+            if not raw.exists():
+                continue
+            py_name  = d.name.replace("-", "_")
+            test_file = d / f"test_{py_name}.py"
+            if not test_file.exists():
+                single.append({"name": d.name})
+
+    # SUITE: planos com pelo menos 1 cenário sem cleaned/test_*.py
+    suite = []
+    base_suite = Path("flows") / "test-plans"
+    if base_suite.exists():
+        for plan_dir in sorted(base_suite.iterdir()):
+            if not plan_dir.is_dir():
+                continue
+            sc_dir   = plan_dir / "scenarios"
+            clean_dir = plan_dir / "cleaned"
+            if not sc_dir.exists():
+                continue
+            pending = 0
+            for sc in sc_dir.iterdir():
+                if not sc.is_dir():
+                    continue
+                raw = sc / f"{sc.name}.py"
+                if not raw.exists():
+                    continue
+                py_name   = sc.name.replace("-", "_")
+                test_file = clean_dir / f"test_{py_name}.py"
+                if not test_file.exists():
+                    pending += 1
+            if pending > 0:
+                suite.append({"name": plan_dir.name, "pending": pending})
+
+    return {"single": single, "suite": suite}
+
+
+def _home_ctx(error: str = "", open_plan: str = "") -> dict:
+    """Contexto completo para renderizar home.html sem Jinja2 UndefinedError."""
+    return dict(
+        plans=_all_suite_plans(),
+        suite_plans=_all_suite_plans(),
+        scenarios=_available_scenarios(),
+        open_plan=open_plan,
+        plan_scenarios=_plan_scenarios(open_plan) if open_plan else [],
+        error=error,
+    )
 
 
 def _cors(response):
@@ -30,23 +116,52 @@ def _cors(response):
 
 # ── services (singleton por processo) ────────────────────────────────────────
 
-_ollama = OllamaClient()
-_transformer_svc = ScenarioTransformerService(StepTransformer(_ollama))
-_bdd_svc = BddGeneratorService(Humanizer(_ollama))
+_claude = ClaudeClient()           # usa ANTHROPIC_API_KEY do ambiente
+_transformer_svc = ScenarioTransformerService(StepTransformer(_claude))
+_bdd_svc = BddGeneratorService(Humanizer(_claude))
 
 # ── subprocesso de gravação (single-user local) ───────────────────────────────
 
 _proc: subprocess.Popen | None = None
 
+
+def _kill_proc():
+    """Termina o processo de gravação em curso, se houver."""
+    global _proc
+    if _proc and _proc.poll() is None:
+        _proc.terminate()
+        try:
+            _proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            _proc.kill()
+    _proc = None
+
+
 # ── jobs de processamento assíncrono ─────────────────────────────────────────
-# job_id -> {"status": "running"|"done"|"error", "results": [...], "steps": {...}}
+# job_id -> {"status": "running"|"done", "created_at": float, ...}
 _jobs: dict[str, dict] = {}
+_jobs_lock = threading.Lock()          # protege check de conclusão de batch
+_JOB_TTL = 3600  # 1 hora — jobs órfãos são removidos
+
+
+def _evict_old_jobs():
+    """Remove jobs concluídos há mais de _JOB_TTL segundos."""
+    now = _time.monotonic()
+    stale = [jid for jid, j in _jobs.items()
+             if j["status"] == "done" and now - j.get("created_at", now) > _JOB_TTL]
+    for jid in stale:
+        del _jobs[jid]
+
+
+def _safe_name(name: str) -> str:
+    """Garante que um nome de plano/cenário contenha só chars seguros para path."""
+    return _re.sub(r"[^a-zA-Z0-9_\-]", "", name)
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
 
 def _available_plans() -> list[dict]:
-    """Retorna planos que têm pasta cleaned/ com pelo menos um test_*.py."""
+    """Retorna planos que têm pasta cleaned/ com pelo menos um test_*.py (para execução)."""
     base = Path("flows") / "test-plans"
     if not base.exists():
         return []
@@ -61,6 +176,33 @@ def _available_plans() -> list[dict]:
                 "name": d.name,
                 "count": len(tests),
                 "path": str(cleaned),
+            })
+    return plans
+
+
+def _all_suite_plans() -> list[dict]:
+    """Retorna TODOS os planos existentes, incluindo os sem testes processados ainda."""
+    base = Path("flows") / "test-plans"
+    if not base.exists():
+        return []
+    plans = []
+    for d in sorted(base.iterdir()):
+        if not d.is_dir():
+            continue
+        # Conta cenários gravados (raw)
+        scenarios_dir = d / "scenarios"
+        raw_count = sum(
+            1 for s in scenarios_dir.iterdir()
+            if s.is_dir() and (s / f"{s.name}.py").exists()
+        ) if scenarios_dir.exists() else 0
+        # Conta testes processados (cleaned)
+        cleaned = d / "cleaned"
+        clean_count = len(list(cleaned.glob("test_*.py"))) if cleaned.exists() else 0
+        if raw_count > 0 or clean_count > 0:
+            plans.append({
+                "name":        d.name,
+                "raw_count":   raw_count,
+                "clean_count": clean_count,
             })
     return plans
 
@@ -189,11 +331,15 @@ def _normalize_url(url: str) -> str:
 
 
 def _to_scenario(s: dict) -> Scenario:
+    mode = ExecutionMode[s["mode"]]
+    plan_name = s.get("plan_name") or None
+    if mode == ExecutionMode.SUITE and not plan_name:
+        raise ValueError("plan_name é obrigatório para cenários SUITE")
     return Scenario(
         name=s["name"],
         url=s.get("url", ""),
-        mode=ExecutionMode[s["mode"]],
-        plan_name=s.get("plan_name"),
+        mode=mode,
+        plan_name=plan_name,
     )
 
 
@@ -224,19 +370,51 @@ def _safe_bdd(scenario: Scenario) -> tuple[bool, str]:
         return False, str(exc)
 
 
+def _pytest_worker(job_id: str, cmd: list, plan: str, evidences_url: str, back_url: str):
+    """Worker de thread: roda pytest e guarda resultado em _jobs."""
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output = (result.stdout + result.stderr).decode("utf-8", errors="replace").strip()
+    _jobs[job_id].update({
+        "status":        "done",
+        "output":        output,
+        "passed":        result.returncode == 0,
+        "plan":          plan,
+        "evidences_url": evidences_url,
+        "back_url":      back_url,
+    })
+
+
+def _batch_scenario_worker(job_id: str, idx: int, sc: "Scenario"):
+    """Worker module-level: processa UM cenário de batch em paralelo."""
+    _jobs[job_id]["scenarios"][idx]["status"] = "running"
+    try:
+        ok, detail = _safe_transform(sc)
+    except Exception as exc:
+        ok, detail = False, str(exc)
+    _jobs[job_id]["scenarios"][idx].update({"status": "done", "ok": ok, "detail": detail})
+    # Lock evita race condition: dois threads passando pelo check ao mesmo tempo
+    with _jobs_lock:
+        if all(s["status"] == "done" for s in _jobs[job_id]["scenarios"]):
+            _jobs[job_id]["status"] = "done"
+
+
 # ── routes ────────────────────────────────────────────────────────────────────
 
 @app.route("/")
 def home():
-    session.clear()
-    # Permite abrir direto na aba de bateria com plano pré-selecionado
-    open_plan = request.args.get("plan", "")
+    # Só limpa a sessão se não houver fluxo ativo em andamento
+    if "scenario" not in session:
+        session.clear()
+    open_plan = _safe_name(request.args.get("plan", ""))
+    all_plans = _all_suite_plans()   # computado uma vez para ambas as chaves
     return render_template(
         "home.html",
-        plans=_available_plans(),
+        plans=all_plans,
+        suite_plans=all_plans,
         scenarios=_available_scenarios(),
         open_plan=open_plan,
         plan_scenarios=_plan_scenarios(open_plan) if open_plan else [],
+        error="",
     )
 
 
@@ -249,11 +427,12 @@ def configure():
         name = request.form.get("name", "").strip()
         url  = _normalize_url(request.form.get("url", ""))
         if not name or not url:
-            return render_template("home.html", error="Preencha todos os campos.")
+            return render_template("home.html", **_home_ctx("Preencha todos os campos."))
 
         session["scenario"] = {"name": name, "url": url, "mode": "SINGLE"}
         scenario = _to_scenario(session["scenario"])
         scenario.ensure_dirs()
+        _kill_proc()
         _proc = subprocess.Popen(
             [
                 sys.executable, "-m", "playwright", "codegen",
@@ -269,13 +448,10 @@ def configure():
     if mode == "reprocess":
         name = request.form.get("name", "").strip()
         if not name:
-            return render_template("home.html", error="Informe o nome do cenário.")
+            return render_template("home.html", **_home_ctx("Informe o nome do cenário."))
         scenario = Scenario(name=name, url="", mode=ExecutionMode.SINGLE)
         if not scenario.raw_path.exists():
-            return render_template(
-                "home.html",
-                error=f"Cenário não encontrado: {scenario.raw_path}",
-            )
+            return render_template("home.html", **_home_ctx(f"Cenário não encontrado: {scenario.raw_path}"))
         session["scenario"] = {"name": name, "url": "", "mode": "SINGLE"}
         return redirect(url_for("processing"))
 
@@ -284,15 +460,11 @@ def configure():
         name = request.form.get("name", "").strip()
         url  = _normalize_url(request.form.get("url", ""))
         if not plan or not name or not url:
-            return render_template(
-                "home.html",
-                plans=_available_plans(),
-                scenarios=_available_scenarios(),
-                error="Preencha todos os campos da bateria.",
-            )
+            return render_template("home.html", **_home_ctx("Preencha todos os campos da bateria.", open_plan=plan))
         session["scenario"] = {"name": name, "url": url, "mode": "SUITE", "plan_name": plan}
         scenario = _to_scenario(session["scenario"])
         scenario.ensure_dirs()
+        _kill_proc()
         _proc = subprocess.Popen(
             [
                 sys.executable, "-m", "playwright", "codegen",
@@ -308,28 +480,69 @@ def configure():
     if mode == "regression":
         plan = request.form.get("plan", "").strip()
         if not plan:
-            return render_template(
-                "home.html",
-                plans=_available_plans(),
-                scenarios=_available_scenarios(),
-                error="Informe o nome da bateria.",
-            )
+            return render_template("home.html", **_home_ctx("Informe o nome da bateria."))
         return redirect(url_for("regression", plan_name=plan))
 
-    return redirect(url_for("home"))
+    return render_template("home.html", **_home_ctx(f"Modo inválido: {mode}."))
+
+
+@app.route("/process-plan/<plan_name>")
+def process_plan(plan_name: str):
+    """Processa em batch todos os cenários não processados de um plano SUITE."""
+    plan_name = _safe_name(plan_name)
+    scenarios_dir = Path("flows") / "test-plans" / plan_name / "scenarios"
+    cleaned_dir   = Path("flows") / "test-plans" / plan_name / "cleaned"
+
+    if not scenarios_dir.exists():
+        return render_template("home.html", **_home_ctx(f"Plano não encontrado: {plan_name}"))
+
+    # Coleta cenários sem test_*.py gerado
+    unprocessed = []
+    for d in sorted(scenarios_dir.iterdir()):
+        if not d.is_dir():
+            continue
+        raw = d / f"{d.name}.py"
+        if not raw.exists():
+            continue
+        py_name   = d.name.replace("-", "_")
+        test_file = cleaned_dir / f"test_{py_name}.py"
+        if not test_file.exists():
+            unprocessed.append(Scenario(name=d.name, url="", mode=ExecutionMode.SUITE,
+                                        plan_name=plan_name))
+
+    if not unprocessed:
+        return render_template("home.html", **_home_ctx("Todos os cenários desta bateria já foram processados."))
+
+    job_id = str(_uuid.uuid4())
+    _jobs[job_id] = {
+        "status": "running",
+        "type": "batch",
+        "plan": plan_name,
+        "scenarios": [
+            {"name": sc.name, "status": "pending", "ok": None, "detail": ""}
+            for sc in unprocessed
+        ],
+        "created_at": _time.monotonic(),
+    }
+
+    # Lança uma thread por cenário — processamento paralelo
+    for idx, sc in enumerate(unprocessed):
+        threading.Thread(
+            target=_batch_scenario_worker,
+            args=(job_id, idx, sc),
+            daemon=True,
+        ).start()
+
+    return redirect(url_for("batch_wait") + f"?job={job_id}&plan={plan_name}")
 
 
 @app.route("/reprocess/<scenario_name>")
 def reprocess(scenario_name: str):
     """Inicia reprocessamento de um cenário pelo nome (via card clicável)."""
+    scenario_name = _safe_name(scenario_name)
     scenario = Scenario(name=scenario_name, url="", mode=ExecutionMode.SINGLE)
     if not scenario.raw_path.exists():
-        return render_template(
-            "home.html",
-            plans=_available_plans(),
-            scenarios=_available_scenarios(),
-            error=f"Gravação não encontrada: {scenario.raw_path}",
-        )
+        return render_template("home.html", **_home_ctx(f"Gravação não encontrada: {scenario.raw_path}"))
     session["scenario"] = {"name": scenario_name, "url": "", "mode": "SINGLE"}
     return redirect(url_for("processing"))
 
@@ -348,28 +561,42 @@ def recording():
 
 @app.route("/stop-recording", methods=["POST"])
 def stop_recording():
-    global _proc
-    if _proc and _proc.poll() is None:
-        _proc.terminate()
-        try:
-            _proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            _proc.kill()
-    _proc = None
+    """Para o codegen. SUITE → tela de 'gravar mais ou processar'. SINGLE → processamento."""
+    _kill_proc()
+    scenario_dict = session.get("scenario", {})
+    if scenario_dict.get("mode") == "SUITE":
+        plan_name = scenario_dict.get("plan_name", "")
+        return redirect(url_for("suite_recorded") + f"?plan={plan_name}")
     return redirect(url_for("processing"))
+
+
+@app.route("/suite-recorded")
+def suite_recorded():
+    """Após gravar um cenário SUITE: mostra lista e oferece gravar mais ou processar tudo."""
+    plan_name = _safe_name(request.args.get("plan", ""))
+    scenario  = session.get("scenario", {})
+    recorded  = _plan_scenarios(plan_name) if plan_name else []
+    return render_template(
+        "suite_recorded.html",
+        plan=plan_name,
+        recorded=recorded,
+        last_scenario=scenario,
+    )
 
 
 @app.route("/processing")
 def processing():
     if "scenario" not in session:
-        return redirect(url_for("home"))
+        pending = _pending_processing()
+        return render_template("processing_continue.html", pending=pending)
     return render_template("processing.html", scenario=session["scenario"])
 
 
 @app.route("/run-process", methods=["POST"])
 def run_process():
     if "scenario" not in session:
-        return redirect(url_for("home"))
+        pending = _pending_processing()
+        return render_template("processing_continue.html", pending=pending)
 
     do_transform = "transform" in request.form
     do_bdd       = "bdd" in request.form
@@ -377,8 +604,7 @@ def run_process():
     scenario      = _to_scenario(scenario_dict)
 
     job_id = str(_uuid.uuid4())
-    _jobs[job_id] = {"status": "running", "results": [], "steps": {"transform": do_transform, "bdd": do_bdd}}
-    session["job_id"] = job_id
+    _jobs[job_id] = {"status": "running", "results": [], "steps": {"transform": do_transform, "bdd": do_bdd}, "created_at": _time.monotonic()}
 
     def _worker(job_id: str, scenario: Scenario, do_transform: bool, do_bdd: bool):
         results: list[tuple[bool, str, str]] = []
@@ -398,29 +624,42 @@ def run_process():
             _jobs[job_id]["status"]  = "done"
 
     threading.Thread(target=_worker, args=(job_id, scenario, do_transform, do_bdd), daemon=True).start()
-    return redirect(url_for("processing_wait"))
+    return redirect(url_for("processing_wait", job=job_id))
 
 
 @app.route("/processing-wait")
 def processing_wait():
-    if "scenario" not in session:
-        return redirect(url_for("home"))
-    return render_template("processing_wait.html", scenario=session["scenario"])
+    job_id = request.args.get("job", "")
+    label  = request.args.get("label", "")
+    scenario = session.get("scenario") or {"name": label or "…"}
+    return render_template("processing_wait.html", scenario=scenario, job_id=job_id)
 
 
-@app.route("/api/job-status")
-def api_job_status():
-    job_id = session.get("job_id")
-    if not job_id or job_id not in _jobs:
+@app.route("/api/job-status/<job_id>")
+def api_job_status(job_id: str):
+    """Polling sem sessão: recebe job_id direto na URL."""
+    if job_id not in _jobs:
         return jsonify({"status": "unknown"})
     job = _jobs[job_id]
-    if job["status"] != "done":
+    if job["status"] not in ("done", "ready"):
         return jsonify({"status": "running"})
-    # Move resultado para sessão e limpa o job
+    _jobs[job_id]["status"] = "ready"   # marca como consumível por /results/<job_id>
+    return jsonify({"status": "done", "job_id": job_id})
+
+
+@app.route("/results/<job_id>")
+def results_by_job(job_id: str):
+    """Exibe resultado do processamento IA lendo direto de _jobs."""
+    job = _jobs.pop(job_id, None)
+    if not job:
+        return redirect(url_for("home"))
     session["results"]    = job["results"]
     session["last_steps"] = job["steps"]
-    del _jobs[job_id]
-    return jsonify({"status": "done"})
+    # Preserva o cenário na sessão somente se já existe (evita gravar None)
+    if "scenario" not in session and job.get("scenario_dict"):
+        session["scenario"] = job["scenario_dict"]
+    session.modified = True
+    return redirect(url_for("results"))
 
 
 @app.route("/results")
@@ -445,6 +684,8 @@ def results():
 
 @app.route("/regression/<plan_name>")
 def regression(plan_name: str):
+    plan_name = _safe_name(plan_name)
+    _evict_old_jobs()
     cleaned_dir = Path("flows") / "test-plans" / plan_name / "cleaned"
 
     if not cleaned_dir.exists():
@@ -458,23 +699,10 @@ def regression(plan_name: str):
     job_id = str(_uuid.uuid4())
     _jobs[job_id] = {"status": "running", "kind": "pytest", "plan": plan_name,
                      "evidences_url": f"/regression/{plan_name}/evidences",
-                     "back_url": "/"}
-    session["job_id"] = job_id
-
-    def _worker(job_id: str, cmd: list, plan: str, evidences_url: str, back_url: str):
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output = (result.stdout + result.stderr).decode("utf-8", errors="replace").strip()
-        _jobs[job_id].update({
-            "status":       "done",
-            "output":       output,
-            "passed":       result.returncode == 0,
-            "plan":         plan,
-            "evidences_url": evidences_url,
-            "back_url":     back_url,
-        })
+                     "back_url": "/", "created_at": _time.monotonic()}
 
     threading.Thread(
-        target=_worker,
+        target=_pytest_worker,
         args=(job_id,
               [sys.executable, "-m", "pytest", str(cleaned_dir), "--headed", "-v", "--tb=short"],
               plan_name,
@@ -482,25 +710,78 @@ def regression(plan_name: str):
               "/"),
         daemon=True,
     ).start()
-    return redirect(url_for("pytest_wait", label=plan_name))
+    return redirect(url_for("pytest_wait", label=plan_name, job=job_id))
 
 
 @app.route("/pytest-wait/<label>")
 def pytest_wait(label: str):
     """Tela de espera enquanto o pytest roda em background."""
-    return render_template("pytest_wait.html", label=label)
+    job_id = request.args.get("job", "")
+    return render_template("pytest_wait.html", label=label, job_id=job_id)
 
 
-@app.route("/api/pytest-status")
-def api_pytest_status():
-    """Polling: retorna status do job pytest corrente na sessão."""
-    job_id = session.get("job_id")
-    if not job_id or job_id not in _jobs:
+@app.route("/api/pytest-status/<job_id>")
+def api_pytest_status(job_id: str):
+    """Polling sem sessão: recebe job_id direto na URL."""
+    if job_id not in _jobs:
         return jsonify({"status": "unknown"})
     job = _jobs[job_id]
-    if job["status"] != "done":
+    if job["status"] not in ("done", "ready"):
         return jsonify({"status": "running"})
-    # Job concluído — move dados para sessão e limpa
+    _jobs[job_id]["status"] = "ready"
+    return jsonify({"status": "done", "job_id": job_id})
+
+
+# ── Batch wait (processamento paralelo de bateria) ─────────────────────────────
+
+@app.route("/batch-wait")
+def batch_wait():
+    """Tela de acompanhamento em tempo real do processamento paralelo de batch."""
+    job_id = request.args.get("job", "")
+    plan   = request.args.get("plan", "")
+    return render_template("batch_wait.html", job_id=job_id, plan=plan)
+
+
+@app.route("/api/batch-status/<job_id>")
+def api_batch_status(job_id: str):
+    """Retorna status detalhado de cada cenário do batch para polling da UI."""
+    job = _jobs.get(job_id)
+    if not job:
+        return jsonify({"status": "unknown"})
+    return jsonify({
+        "status":    job["status"],
+        "scenarios": job.get("scenarios", []),
+        "plan":      job.get("plan", ""),
+    })
+
+
+@app.route("/batch-result/<job_id>")
+def batch_result(job_id: str):
+    """Tela de resultado após processamento em batch."""
+    job = _jobs.pop(job_id, None)
+    if not job:
+        return redirect(url_for("home"))
+    scenarios = job.get("scenarios", [])
+    plan      = job.get("plan", "")
+    passed    = [s for s in scenarios if s.get("ok")]
+    failed    = [s for s in scenarios if not s.get("ok")]
+    return render_template(
+        "batch_result.html",
+        plan=plan,
+        scenarios=scenarios,
+        passed=passed,
+        failed=failed,
+        job_id=job_id,
+    )
+
+
+@app.route("/pytest-result/<job_id>")
+def pytest_result(job_id: str):
+    """Exibe o resultado do pytest lendo direto de _jobs pelo job_id."""
+    job = _jobs.pop(job_id, None)
+    if not job:
+        return redirect(url_for("home"))
+    # Guarda na sessão para o /report conseguir gerar o relatório
     session["pytest_result"] = {
         "output":        job["output"],
         "passed":        job["passed"],
@@ -508,31 +789,21 @@ def api_pytest_status():
         "evidences_url": job.get("evidences_url"),
         "back_url":      job.get("back_url", "/"),
     }
-    del _jobs[job_id]
-    return jsonify({"status": "done"})
-
-
-@app.route("/pytest-result")
-def pytest_result():
-    """Exibe o resultado do pytest após polling."""
-    r = session.get("pytest_result")
-    if not r:
-        return redirect(url_for("home"))
+    session.modified = True
     return render_template(
         "regression.html",
-        output=r["output"],
-        passed=r["passed"],
-        plan=r["plan"],
-        evidences_url=r.get("evidences_url"),
-        back_url=r.get("back_url", "/"),
+        output=job["output"],
+        passed=job["passed"],
+        plan=job["plan"],
+        evidences_url=job.get("evidences_url"),
+        back_url=job.get("back_url", "/"),
     )
 
 
 @app.route("/regression/<plan_name>/evidences")
 def regression_evidences(plan_name: str):
     """Galeria de evidências de uma bateria (SUITE)."""
-    # LLM generates: Path(__file__).parent / "evidences"
-    # For SUITE, test files live in cleaned/ → evidences land in cleaned/evidences/
+    plan_name = _safe_name(plan_name)
     evidences_dir = Path("flows") / "test-plans" / plan_name / "cleaned" / "evidences"
     evidences = (
         [{"name": f.name, "path": str(f.resolve())}
@@ -551,35 +822,19 @@ def regression_evidences(plan_name: str):
 @app.route("/run-test/<scenario_name>")
 def run_test(scenario_name: str):
     """Executa um cenário unity-test isolado."""
+    scenario_name = _safe_name(scenario_name)
+    _evict_old_jobs()
     scenario = Scenario(name=scenario_name, url="", mode=ExecutionMode.SINGLE)
     if not scenario.clean_path.exists():
-        return render_template(
-            "home.html",
-            plans=_available_plans(),
-            scenarios=_available_scenarios(),
-            error=f"Teste não encontrado: {scenario.clean_path}",
-        )
+        return render_template("home.html", **_home_ctx(f"Teste não encontrado: {scenario.clean_path}"))
 
     job_id = str(_uuid.uuid4())
     _jobs[job_id] = {"status": "running", "kind": "pytest", "plan": scenario_name,
                      "evidences_url": f"/run-test/{scenario_name}/evidences",
-                     "back_url": "/"}
-    session["job_id"] = job_id
-
-    def _worker(job_id: str, cmd: list, plan: str, evidences_url: str, back_url: str):
-        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        output = (result.stdout + result.stderr).decode("utf-8", errors="replace").strip()
-        _jobs[job_id].update({
-            "status":        "done",
-            "output":        output,
-            "passed":        result.returncode == 0,
-            "plan":          plan,
-            "evidences_url": evidences_url,
-            "back_url":      back_url,
-        })
+                     "back_url": "/", "created_at": _time.monotonic()}
 
     threading.Thread(
-        target=_worker,
+        target=_pytest_worker,
         args=(job_id,
               [sys.executable, "-m", "pytest", str(scenario.clean_path), "--headed", "-v", "--tb=short"],
               scenario_name,
@@ -587,12 +842,13 @@ def run_test(scenario_name: str):
               "/"),
         daemon=True,
     ).start()
-    return redirect(url_for("pytest_wait", label=scenario_name))
+    return redirect(url_for("pytest_wait", label=scenario_name, job=job_id))
 
 
 @app.route("/run-test/<scenario_name>/evidences")
 def run_test_evidences(scenario_name: str):
     """Galeria de evidências de um cenário isolado (SINGLE)."""
+    scenario_name = _safe_name(scenario_name)
     scenario = Scenario(name=scenario_name, url="", mode=ExecutionMode.SINGLE)
     evidences_dir = scenario.evidences_dir
     evidences = (
@@ -609,16 +865,31 @@ def run_test_evidences(scenario_name: str):
     )
 
 
+_FLOWS_ROOT = Path("flows").resolve()
+
+
+def _safe_image_path(img_path: str):
+    """Resolve e valida que o path está dentro de flows/. Retorna Path ou None."""
+    if not img_path:
+        return None
+    try:
+        p = Path(img_path).resolve()
+        # Deve estar dentro da pasta flows/ do projeto
+        p.relative_to(_FLOWS_ROOT)
+        if p.exists() and p.is_file() and p.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".webp"}:
+            return p
+    except (ValueError, Exception):
+        pass
+    return None
+
+
 @app.route("/evidence-image")
 def evidence_image():
-    """Serve uma imagem de evidência de qualquer path no disco."""
-    img_path = request.args.get("path", "").strip()
-    if not img_path:
-        return "path obrigatório", 400
-    p = Path(img_path)
-    if not p.exists() or not p.is_file():
-        return "Não encontrado", 404
-    return send_file(str(p.resolve()), mimetype="image/png")
+    """Serve uma imagem de evidência — restrito à pasta flows/."""
+    p = _safe_image_path(request.args.get("path", "").strip())
+    if not p:
+        return "Não encontrado ou acesso negado", 404
+    return send_file(str(p), mimetype="image/png")
 
 
 @app.route("/library")
@@ -705,15 +976,72 @@ def api_scenarios():
 
 @app.route("/api/evidence-image")
 def api_evidence_image():
-    """Alias CORS-friendly para /evidence-image."""
-    img_path = request.args.get("path", "").strip()
-    if not img_path:
-        return _cors(jsonify({"error": "path obrigatório"})), 400
-    p = Path(img_path)
-    if not p.exists() or not p.is_file():
-        return _cors(jsonify({"error": "não encontrado"})), 404
-    response = send_file(str(p.resolve()), mimetype="image/png")
-    return _cors(response)
+    """Alias CORS-friendly para /evidence-image — restrito a flows/."""
+    p = _safe_image_path(request.args.get("path", "").strip())
+    if not p:
+        return _cors(jsonify({"error": "não encontrado ou acesso negado"})), 404
+    return _cors(send_file(str(p), mimetype="image/png"))
+
+
+@app.route("/report")
+def report():
+    """Gera relatório de execução 100% bem-sucedida."""
+    import re
+    from datetime import datetime
+
+    r = session.get("pytest_result")
+    if not r or not r.get("passed"):
+        return redirect(url_for("home"))
+
+    output = r.get("output", "")
+    plan   = r.get("plan", "—")
+
+    # Parseia linhas com PASSED do output -v do pytest
+    # ex: "flows/.../test_foo.py::test_foo PASSED   [ 50%]"
+    passed_tests = []
+    for line in output.splitlines():
+        line = line.strip()
+        if " PASSED" not in line or "::" not in line:
+            continue
+        try:
+            # parte antes de PASSED: "flows/.../test_foo.py::test_foo"
+            before_passed = line.split(" PASSED")[0].strip()
+            file_part, test_part = before_passed.rsplit("::", 1)
+            passed_tests.append({
+                "file": file_part.replace("\\", "/").split("/")[-1],
+                "test": test_part.strip(),
+            })
+        except Exception:
+            continue
+
+    # Evidências (se existirem)
+    ev_url  = r.get("evidences_url")
+    ev_dir  = None
+    images  = []
+    if ev_url:
+        # tenta descobrir pasta a partir da url
+        if "/regression/" in ev_url:
+            pname = ev_url.split("/regression/")[1].split("/")[0]
+            ev_dir = Path("flows") / "test-plans" / pname / "cleaned" / "evidences"
+        elif "/run-test/" in ev_url:
+            sname = ev_url.split("/run-test/")[1].split("/")[0]
+            sc = Scenario(name=sname, url="", mode=ExecutionMode.SINGLE)
+            ev_dir = sc.evidences_dir
+        if ev_dir and ev_dir.exists():
+            images = [
+                {"name": f.name, "url": f"/evidence-image?path={_url_quote(str(f.resolve()))}"}
+                for f in sorted(ev_dir.glob("*.png"))
+            ]
+
+    return render_template(
+        "report.html",
+        plan=plan,
+        generated_at=datetime.now().strftime("%d/%m/%Y às %H:%M"),
+        passed_tests=passed_tests,
+        total=len(passed_tests),
+        images=images,
+        ev_url=ev_url,
+    )
 
 
 @app.route("/reset")

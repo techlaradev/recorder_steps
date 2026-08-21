@@ -100,13 +100,13 @@
   <div class="tab-pane fade" id="tab-suite">
 
     {# ── Baterias existentes ──────────────────────────────────────────────── #}
-    {% if plans %}
+    {% if suite_plans %}
     <div style="margin-bottom:20px;">
       <div style="font-size:.75rem; color:var(--c-placeholder); margin-bottom:8px;">
         Baterias existentes — clique para adicionar um cenário:
       </div>
       <div style="display:flex; flex-direction:column; gap:6px;">
-        {% for plan in plans %}
+        {% for plan in suite_plans %}
         <div style="display:flex; align-items:center; justify-content:space-between;
                     padding:10px 14px;
                     background:var(--c-bg);
@@ -115,7 +115,10 @@
           <div>
             <span style="color:var(--c-title); font-weight:600; font-size:.85rem;">{{ plan.name }}</span>
             <span style="color:var(--c-placeholder); font-size:.7rem; margin-left:8px;">
-              📄 {{ plan.count }} teste{{ 's' if plan.count != 1 else '' }}
+              🎬 {{ plan.raw_count }} gravado{{ 's' if plan.raw_count != 1 else '' }}
+              {% if plan.clean_count %}
+              · ✅ {{ plan.clean_count }} processado{{ 's' if plan.clean_count != 1 else '' }}
+              {% endif %}
             </span>
           </div>
           <button type="button"
@@ -224,27 +227,54 @@
 
       <div style="display:flex; flex-direction:column; gap:10px;">
         {% for plan in plans %}
-        <a href="/regression/{{ plan.name }}"
-           style="display:flex; align-items:center; justify-content:space-between;
-                  padding:14px 16px;
-                  background:var(--c-bg);
-                  border:1px solid var(--c-border);
-                  border-radius:var(--r-btn);
-                  text-decoration:none;
-                  transition: border-color .15s, background .15s;"
-           onmouseover="this.style.borderColor='var(--c-primary)'; this.style.background='var(--c-surface)'"
-           onmouseout="this.style.borderColor='var(--c-border)'; this.style.background='var(--c-bg)'">
-          <div>
+        {% set can_run = plan.clean_count > 0 %}
+        <div style="display:flex; align-items:center; gap:8px;
+                    padding:14px 16px;
+                    background:var(--c-bg);
+                    border:1px solid {{ 'var(--c-border)' if can_run else '#4a4a4a' }};
+                    border-radius:var(--r-btn);">
+
+          <div style="flex:1; min-width:0;">
             <div class="fw-semibold" style="color:var(--c-title); font-size:.875rem;">{{ plan.name }}</div>
             <div style="font-size:.7rem; color:var(--c-placeholder); margin-top:3px;">
-              📄 {{ plan.count }} teste{{ 's' if plan.count != 1 else '' }} &nbsp;·&nbsp;
-              <code style="font-size:.65rem;">{{ plan.path }}</code>
+              {% if can_run %}
+                ✅ {{ plan.clean_count }} teste{{ 's' if plan.clean_count != 1 else '' }} prontos
+                {% if plan.raw_count > plan.clean_count %}
+                  &nbsp;·&nbsp; ⏳ {{ plan.raw_count - plan.clean_count }} aguardando processamento
+                {% endif %}
+              {% else %}
+                ⏳ {{ plan.raw_count }} gravado{{ 's' if plan.raw_count != 1 else '' }} — processe os cenários primeiro
+              {% endif %}
             </div>
           </div>
-          <span style="color:var(--c-primary); font-size:.8rem; font-weight:600; white-space:nowrap; margin-left:12px;">
-            ▶️ Executar
-          </span>
-        </a>
+
+          <div style="display:flex; gap:6px; flex-shrink:0;">
+            <a href="/?plan={{ plan.name }}"
+               style="padding:6px 12px; border-radius:var(--r-btn);
+                      background:rgba(161,0,255,.12); border:1px solid var(--c-primary);
+                      color:var(--c-primary); font-size:.75rem; font-weight:600;
+                      text-decoration:none; white-space:nowrap;">
+              ➕ Cenário
+            </a>
+            {% if can_run %}
+            <a href="/regression/{{ plan.name }}"
+               style="padding:6px 12px; border-radius:var(--r-btn);
+                      background:var(--c-primary); border:1px solid var(--c-primary);
+                      color:#fff; font-size:.75rem; font-weight:600;
+                      text-decoration:none; white-space:nowrap;">
+              ▶️ Executar
+            </a>
+            {% else %}
+            <a href="/process-plan/{{ plan.name }}"
+               style="padding:6px 12px; border-radius:var(--r-btn);
+                      background:rgba(196,121,0,.15); border:1px solid #c47900;
+                      color:#ffc75f; font-size:.75rem; font-weight:600;
+                      text-decoration:none; white-space:nowrap;">
+              ⚙️ Processar
+            </a>
+            {% endif %}
+          </div>
+        </div>
         {% endfor %}
       </div>
 

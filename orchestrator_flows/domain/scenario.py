@@ -20,7 +20,11 @@ class Scenario:
     @property
     def root_dir(self) -> Path:
         if self.mode == ExecutionMode.SUITE:
-            return self.base_dir / "test-plans" / str(self.plan_name)
+            if not self.plan_name:
+                raise ValueError(
+                    f"Cenário SUITE '{self.name}' sem plan_name definido."
+                )
+            return self.base_dir / "test-plans" / self.plan_name
 
         return self.base_dir / "unity-test" / self.name
 

@@ -26,17 +26,20 @@
 
 {% block scripts %}
 <script>
+  const JOB_ID = {{ job_id | tojson }};
+
   const dots = document.getElementById('dots');
   const frames = ['·  ', '·· ', '···', ' ··', '  ·'];
   let i = 0;
   setInterval(() => { dots.textContent = frames[i++ % frames.length]; }, 400);
 
   async function poll() {
+    if (!JOB_ID) { window.location.href = '/'; return; }
     try {
-      const resp = await fetch('/api/pytest-status');
+      const resp = await fetch('/api/pytest-status/' + JOB_ID);
       const data = await resp.json();
       if (data.status === 'done') {
-        window.location.href = '/pytest-result';
+        window.location.href = '/pytest-result/' + JOB_ID;
         return;
       }
       if (data.status === 'unknown') {
