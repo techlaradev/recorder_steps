@@ -70,52 +70,73 @@
     <span style="color:var(--c-primary); font-size:.8rem;">▾</span>
   </summary>
 
-  <!-- Grid de imagens -->
-  <div style="
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 12px;
-    padding: 16px;
-    background: var(--c-bg);
-    border: 1px solid var(--c-border);
-    border-top: none;
-    border-radius: 0 0 var(--r-card) var(--r-card);
-  ">
-    {% for img in unit.images %}
+  <!-- Conteúdo do acordeão -->
+  <div style="background: var(--c-bg);
+              border: 1px solid var(--c-border);
+              border-top: none;
+              border-radius: 0 0 var(--r-card) var(--r-card);">
+
+    {% if unit.feature_content %}
+    <!-- BDD Feature -->
+    <details style="border-bottom:1px solid var(--c-border);">
+      <summary style="cursor:pointer; padding:10px 16px;
+                      font-size:.75rem; font-weight:600; color:#6fcf6f;
+                      list-style:none; user-select:none; display:flex; align-items:center; gap:6px;">
+        <span>📄</span>
+        <span>Feature BDD</span>
+        <span style="color:var(--c-placeholder); font-weight:400; font-size:.7rem; margin-left:auto;">▾ ver</span>
+      </summary>
+      <pre style="margin:0; padding:12px 16px;
+                  font-size:.72rem; line-height:1.55; color:#8de8ad;
+                  white-space:pre-wrap; word-break:break-word;
+                  background:rgba(13,122,78,.05);">{{ unit.feature_content }}</pre>
+    </details>
+    {% endif %}
+
+    <!-- Grid de imagens -->
     <div style="
-      border: 1px solid var(--c-border);
-      border-radius: var(--r-btn);
-      overflow: hidden;
-      background: var(--c-surface);
-      transition: border-color .15s;
-    "
-    onmouseover="this.style.borderColor='var(--c-primary)'"
-    onmouseout="this.style.borderColor='var(--c-border)'">
-
-      <!-- Thumbnail clicável -->
-      <a href="/evidence-image?path={{ img.path | urlencode }}" target="_blank">
-        <img
-          src="/evidence-image?path={{ img.path | urlencode }}"
-          alt="{{ img.name }}"
-          loading="lazy"
-          style="width:100%; height:120px; object-fit:cover; display:block;
-                 border-bottom:1px solid var(--c-border);">
-      </a>
-
-      <!-- Nome do arquivo -->
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+      padding: 16px;
+    ">
+      {% for img in unit.images %}
       <div style="
-        padding: 5px 8px;
-        font-size: .6rem;
-        color: var(--c-placeholder);
-        white-space: nowrap;
+        border: 1px solid var(--c-border);
+        border-radius: var(--r-btn);
         overflow: hidden;
-        text-overflow: ellipsis;
-        line-height: 1.4;
-      " title="{{ img.name }}">
-        {{ img.name }}
+        background: var(--c-surface);
+        transition: border-color .15s;
+      "
+      onmouseover="this.style.borderColor='var(--c-primary)'"
+      onmouseout="this.style.borderColor='var(--c-border)'">
+
+        <!-- Thumbnail clicável -->
+        <a href="/evidence-image?path={{ img.path | urlencode }}" target="_blank">
+          <img
+            src="/evidence-image?path={{ img.path | urlencode }}"
+            alt="{{ img.name }}"
+            loading="lazy"
+            style="width:100%; height:120px; object-fit:cover; display:block;
+                   border-bottom:1px solid var(--c-border);">
+        </a>
+
+        <!-- Nome do arquivo -->
+        <div style="
+          padding: 5px 8px;
+          font-size: .6rem;
+          color: var(--c-placeholder);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          line-height: 1.4;
+        " title="{{ img.name }}">
+          {{ img.name }}
+        </div>
       </div>
+      {% endfor %}
     </div>
-    {% endfor %}
+
   </div>
 </details>
 {% endfor %}

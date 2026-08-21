@@ -73,6 +73,25 @@
 </div>
 {% endif %}
 
+{# ── BDD existente (preview) ────────────────────────────────────────────── #}
+{% if feature_content %}
+<div style="margin-top:4px; margin-bottom:4px;">
+  <details>
+    <summary style="cursor:pointer; padding:10px 14px;
+                    background:rgba(13,122,78,.08); border:1px solid rgba(13,122,78,.3);
+                    border-radius:var(--r-btn); font-size:.8rem; font-weight:600;
+                    color:#6fcf6f; list-style:none; user-select:none;">
+      📄 BDD gerado — clique para ver a feature
+    </summary>
+    <pre style="background:var(--c-bg); border:1px solid rgba(13,122,78,.25); border-top:none;
+                border-radius:0 0 var(--r-btn) var(--r-btn);
+                padding:14px 16px; font-size:.74rem; line-height:1.55;
+                color:#8de8ad; overflow-x:auto; white-space:pre-wrap;
+                word-break:break-word; margin:0;">{{ feature_content }}</pre>
+  </details>
+</div>
+{% endif %}
+
 <hr style="margin:20px 0;">
 
 {# Ações #}
@@ -84,6 +103,11 @@
     🔁 Reprocessar cenários com erro
   </a>
   {% endif %}
+
+  <a href="/generate-suite-bdd/{{ plan }}"
+     class="btn btn-outline-primary w-100" style="font-size:.88rem; padding:11px;">
+    📄 {{ 'Regenerar' if feature_content else 'Gerar' }} BDD consolidado da bateria
+  </a>
 
   <a href="/regression/{{ plan }}"
      class="btn btn-primary w-100" style="font-size:.88rem; padding:11px;">

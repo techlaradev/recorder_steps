@@ -7,28 +7,113 @@
 ] %}
 
 {% block content %}
-<h5 class="mb-4">Resultado</h5>
+
+{# ── Cabeçalho ─────────────────────────────────────────────────────────── #}
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+  <div>
+    <div style="font-size:.65rem; font-weight:700; color:var(--c-tab);
+                letter-spacing:.08em; text-transform:uppercase; margin-bottom:2px;">
+      ✅ Processamento concluído
+    </div>
+    {% if scenario %}
+    <div style="font-size:1.05rem; font-weight:700; color:var(--c-title);">{{ scenario.name }}</div>
+    {% endif %}
+  </div>
+  {% if not has_failure %}
+  <span style="font-size:.7rem; padding:5px 12px; border-radius:50px;
+               background:rgba(13,122,78,.15); border:1px solid rgba(13,122,78,.5);
+               color:#6fcf6f; font-weight:700;">
+    ✅ OK
+  </span>
+  {% else %}
+  <span style="font-size:.7rem; padding:5px 12px; border-radius:50px;
+               background:rgba(196,121,0,.12); border:1px solid #c47900;
+               color:#ffc75f; font-weight:700;">
+    ⚠️ Parcial
+  </span>
+  {% endif %}
+</div>
 
 {% if not results %}
   <div class="alert alert-warning">Nenhuma operação foi realizada.</div>
 {% endif %}
 
+{# ── Resultados de cada etapa ───────────────────────────────────────────── #}
 {% for ok, label, detail in results %}
-  <div class="alert {{ 'alert-success' if ok else 'alert-danger' }} mb-3">
-    <div class="fw-semibold mb-1">{{ label }}</div>
-    <code class="small" style="font-size:.7rem; word-break:break-all;">{{ detail }}</code>
+  <div style="padding:12px 14px; margin-bottom:10px;
+              border:1px solid {{ 'rgba(13,122,78,.4)' if ok else 'rgba(180,0,0,.4)' }};
+              border-radius:var(--r-btn); background:var(--c-bg);">
+    <div style="font-weight:600; font-size:.85rem; color:{{ '#6fcf6f' if ok else '#ff6b6b' }}; margin-bottom:4px;">
+      {{ label }}
+    </div>
+    <code style="font-size:.68rem; color:var(--c-placeholder); word-break:break-all;">{{ detail }}</code>
   </div>
 {% endfor %}
 
-<hr>
+{# ── BDD / Gherkin gerado ───────────────────────────────────────────────── #}
+{% if feature_content %}
+<div style="margin-top:20px;">
+  <div style="font-size:.65rem; font-weight:700; color:var(--c-tab);
+              letter-spacing:.08em; text-transform:uppercase; margin-bottom:8px;">
+    📄 Feature Gerada (Gherkin)
+  </div>
+  <pre style="background:var(--c-bg);
+              border:1px solid rgba(13,122,78,.35);
+              border-radius:var(--r-btn);
+              padding:14px 16px;
+              font-size:.75rem;
+              line-height:1.55;
+              color:#8de8ad;
+              overflow-x:auto;
+              white-space:pre-wrap;
+              word-break:break-word;
+              margin:0;">{{ feature_content }}</pre>
+</div>
+{% endif %}
+
+{# ── Cenários SUITE (se existirem) ─────────────────────────────────────── #}
+{% if suite_scenarios %}
+<div style="margin-top:16px; margin-bottom:4px;
+            font-size:.68rem; font-weight:700; color:var(--c-tab);
+            letter-spacing:.06em; text-transform:uppercase;">
+  Cenários na bateria
+</div>
+{% for sc in suite_scenarios %}
+<div style="display:flex; align-items:center; gap:10px; padding:8px 14px;
+            margin-bottom:6px; border:1px solid var(--c-border);
+            border-radius:var(--r-btn); background:var(--c-bg); font-size:.8rem;">
+  <span>📄</span>
+  <span style="color:var(--c-title); flex:1;">{{ sc.name }}</span>
+</div>
+{% endfor %}
+{% endif %}
+
+<hr style="margin:20px 0;">
+
+{# ── Ações ─────────────────────────────────────────────────────────────── #}
 <div style="display:flex; flex-direction:column; gap:10px;">
+
   {% if has_failure and scenario %}
   <form method="POST" action="/run-process">
     {% if last_steps.transform %}<input type="hidden" name="transform" value="1">{% endif %}
     {% if last_steps.bdd %}<input type="hidden" name="bdd" value="1">{% endif %}
-    <button type="submit" class="btn btn-warning w-100">🔁 Tentar de novo</button>
+    <button type="submit" class="btn btn-warning w-100" style="font-size:.88rem; padding:11px;">
+      🔁 Tentar de novo
+    </button>
   </form>
   {% endif %}
-  <a href="/reset" class="btn btn-primary w-100">✚ Novo cenário</a>
+
+  {% if scenario and scenario.mode == "SUITE" and scenario.plan_name %}
+  <a href="/batch-result/{{ scenario.plan_name }}"
+     class="btn btn-outline-primary w-100" style="font-size:.88rem; padding:11px;">
+    📦 Ver resultado da bateria
+  </a>
+  {% endif %}
+
+  <a href="/reset" class="btn btn-outline-secondary w-100" style="font-size:.82rem;">
+    ← Voltar ao início
+  </a>
+
 </div>
+
 {% endblock %}

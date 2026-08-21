@@ -8,18 +8,30 @@
 
 {% block content %}
 <div class="text-center" style="padding: 24px 0;">
-  <div class="spinner-border mb-4" style="width:3rem;height:3rem;color:var(--c-primary);"></div>
+  <div id="spinner-area">
+    <div class="spinner-border mb-4" style="width:3rem;height:3rem;color:var(--c-primary);"></div>
 
-  <h5 class="mb-2">Processando com IA…</h5>
-  <p class="text-muted" style="font-size:.82rem; margin-bottom:4px;">
-    Cenário: <code>{{ scenario.name }}</code>
-  </p>
-  <p class="text-muted" style="font-size:.75rem;">
-    O modelo pode levar alguns minutos. Aguarde sem fechar esta aba.
-  </p>
+    <h5 class="mb-2">Processando com IA…</h5>
+    <p class="text-muted" style="font-size:.82rem; margin-bottom:4px;">
+      Cenário: <code>{{ scenario.name }}</code>
+    </p>
+    <p class="text-muted" style="font-size:.75rem;">
+      O modelo pode levar alguns minutos. Aguarde sem fechar esta aba.
+    </p>
 
-  <div id="dots" style="margin-top:20px; font-size:1.4rem; letter-spacing:.3rem; color:var(--c-primary);">
-    ···
+    <div id="dots" style="margin-top:20px; font-size:1.4rem; letter-spacing:.3rem; color:var(--c-primary);">
+      ···
+    </div>
+  </div>
+
+  <div id="error-area" style="display:none; margin-top:20px;">
+    <div style="font-size:2rem; margin-bottom:12px;">⚠️</div>
+    <p style="font-size:.85rem; color:var(--c-placeholder); margin-bottom:16px;">
+      O processamento foi interrompido (servidor reiniciou ou sessão expirou).
+    </p>
+    <a href="/" class="btn btn-outline-secondary" style="font-size:.82rem;">
+      ← Voltar ao início
+    </a>
   </div>
 </div>
 
@@ -34,8 +46,13 @@
   let i = 0;
   setInterval(() => { dots.textContent = frames[i++ % frames.length]; }, 400);
 
+  function showError() {
+    document.getElementById('spinner-area').style.display = 'none';
+    document.getElementById('error-area').style.display  = 'block';
+  }
+
   async function poll() {
-    if (!JOB_ID) { window.location.href = '/'; return; }
+    if (!JOB_ID) { showError(); return; }
     try {
       const resp = await fetch('/api/job-status/' + JOB_ID);
       const data = await resp.json();
@@ -44,10 +61,10 @@
         return;
       }
       if (data.status === 'unknown') {
-        window.location.href = '/';
+        showError();   // não vai pro home, mostra mensagem explicativa
         return;
       }
-    } catch (_) { /* continua tentando */ }
+    } catch (_) { /* rede instável — continua tentando */ }
     setTimeout(poll, 3000);
   }
 

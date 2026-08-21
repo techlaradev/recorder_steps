@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% set steps = [
+  {"label": "1. Configurar", "state": "done"},
+  {"label": "2. Gravar",     "state": "done"},
+  {"label": "3. Processar",  "state": "done"},
+  {"label": "4. Resultado",  "state": "active"},
+] %}
+
+{% block content %}
+
+{# ── Cabeçalho ─────────────────────────────────────────────────────────── #}
+<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+  <div>
+    <div style="font-size:.65rem; font-weight:700; color:var(--c-tab);
+                letter-spacing:.08em; text-transform:uppercase; margin-bottom:2px;">
+      📄 BDD Gerado
+    </div>
+    <div style="font-size:1.05rem; font-weight:700; color:var(--c-title);">{{ plan }}</div>
+  </div>
+  {% if ok %}
+  <span style="font-size:.7rem; padding:5px 12px; border-radius:50px;
+               background:rgba(13,122,78,.15); border:1px solid rgba(13,122,78,.5);
+               color:#6fcf6f; font-weight:700;">
+    ✅ Gerado
+  </span>
+  {% else %}
+  <span style="font-size:.7rem; padding:5px 12px; border-radius:50px;
+               background:rgba(180,0,0,.12); border:1px solid rgba(180,0,0,.5);
+               color:#ff6b6b; font-weight:700;">
+    ❌ Erro
+  </span>
+  {% endif %}
+</div>
+
+{% if ok and feature_content %}
+{# ── Conteúdo da feature ───────────────────────────────────────────────── #}
+<div style="margin-bottom:20px;">
+  <div style="font-size:.68rem; font-weight:700; color:var(--c-tab);
+              letter-spacing:.06em; text-transform:uppercase; margin-bottom:8px;">
+    📋 Feature consolidada
+  </div>
+  <pre style="background:rgba(255,255,255,.04); border:1px solid var(--c-border);
+              border-radius:var(--r-btn); padding:14px 16px; font-size:.72rem;
+              color:var(--c-placeholder); line-height:1.6; overflow-x:auto;
+              max-height:340px; white-space:pre-wrap; word-break:break-word;">{{ feature_content }}</pre>
+</div>
+
+{% elif not ok %}
+<div class="alert alert-danger py-2 mb-4" style="font-size:.82rem;">
+  ❌ {{ detail }}
+</div>
+{% endif %}
+
+<hr style="margin:20px 0;">
+
+{# ── Ações ─────────────────────────────────────────────────────────────── #}
+<div style="display:flex; flex-direction:column; gap:10px;">
+
+  {% if ok and plan %}
+  <a href="/regression/{{ plan }}"
+     class="btn btn-primary w-100" style="font-size:.88rem; padding:11px;">
+    🚀 Executar regressão agora
+  </a>
+  {% endif %}
+
+  {% if not ok and plan %}
+  <a href="/generate-suite-bdd/{{ plan }}"
+     class="btn btn-warning w-100" style="font-size:.88rem; padding:11px;">
+    🔁 Tentar gerar BDD novamente
+  </a>
+  {% endif %}
+
+  {% if plan %}
+  <a href="/batch-result/{{ job_id if job_id else '' }}"
+     class="btn btn-outline-secondary w-100" style="font-size:.82rem;">
+    ← Voltar ao resultado da bateria
+  </a>
+  {% endif %}
+
+  <a href="/reset" class="btn btn-outline-secondary w-100" style="font-size:.8rem;">
+    ✖️ Voltar ao início
+  </a>
+
+</div>
+
+{% endblock %}

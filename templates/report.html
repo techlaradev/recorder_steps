@@ -237,6 +237,16 @@
   </div>
   {% endif %}
 
+  <!-- BDD Feature -->
+  {% if feature_content %}
+  <div class="section-title">Especificação BDD (Gherkin)</div>
+  <pre style="background:#0d1a0f; border:1px solid #1e4d2b; border-radius:10px;
+              padding:16px 20px; font-size:.78rem; line-height:1.6;
+              color:#6fffc4; overflow-x:auto; white-space:pre-wrap;
+              word-break:break-word; margin-bottom:28px;
+              font-family:'DM Sans', monospace;">{{ feature_content }}</pre>
+  {% endif %}
+
   <!-- Evidences -->
   {% if images %}
   <div class="section-title">Evidências capturadas</div>
