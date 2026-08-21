@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>⚜️ Orchestrator — Biblioteca</title>
+  <title>⚜️ Orchestrator — Docs</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -39,7 +39,7 @@
       font-size: .68rem;
     }
 
-    /* Navbar */
+    /* ── Navbar ── */
     .navbar {
       background: var(--c-sidebar);
       border-bottom: 1px solid var(--c-border);
@@ -59,10 +59,10 @@
     .nav-pill:hover { background:var(--c-surface); color:var(--c-text); }
     .nav-pill.active { background:rgba(161,0,255,.18); border-color:var(--c-primary); color:var(--c-tab); }
 
-    /* Layout */
+    /* ── Layout ── */
     .page { max-width:1080px; margin:0 auto; padding:28px 20px 60px; }
 
-    /* Section header */
+    /* ── Section header ── */
     .section-header {
       display:flex; align-items:center; gap:10px;
       margin-bottom:14px; padding-bottom:10px;
@@ -75,7 +75,7 @@
       color:var(--c-tab); font-weight:600;
     }
 
-    /* Scenario card */
+    /* ── Scenario card ── */
     .sc-card {
       background:var(--c-sidebar); border:1px solid var(--c-border);
       border-radius:var(--r-card); margin-bottom:10px; overflow:hidden;
@@ -91,7 +91,7 @@
     .sc-header { display:flex; align-items:center; gap:12px; padding:12px 16px; }
     .sc-name { font-size:.9rem; font-weight:600; color:var(--c-title); flex:1; min-width:0; }
 
-    /* Status pills */
+    /* ── Status pills ── */
     .status-row { display:flex; gap:6px; align-items:center; flex-shrink:0; flex-wrap:wrap; }
     .status-pill {
       font-size:.62rem; padding:3px 9px; border-radius:50px;
@@ -102,36 +102,22 @@
     .pill-red    { background:rgba(180,0,0,.15);    border:1px solid rgba(180,0,0,.45);   color:#ff6b6b; }
     .pill-grey   { background:rgba(255,255,255,.05);border:1px solid var(--c-border);     color:var(--c-placeholder); }
 
-    /* Action buttons */
+    /* ── Action buttons ── */
     .sc-actions { display:flex; gap:6px; flex-shrink:0; }
     .btn-mini {
       font-size:.7rem; font-weight:600; padding:5px 12px;
       border-radius:var(--r-btn); border:1px solid; cursor:pointer;
       text-decoration:none; white-space:nowrap; display:inline-block;
+      background: none;
     }
-    .btn-run  { background:var(--c-primary); border-color:var(--c-primary); color:#fff; }
-    .btn-run:hover  { background:var(--c-hover); color:#fff; }
+    .btn-run     { background:var(--c-primary) !important; border-color:var(--c-primary); color:#fff; }
+    .btn-run:hover     { background:var(--c-hover) !important; color:#fff; }
     .btn-process { background:rgba(196,121,0,.18); border-color:#c47900; color:#ffc75f; }
     .btn-process:hover { background:rgba(196,121,0,.3); color:#ffc75f; }
     .btn-bdd { background:rgba(161,0,255,.15); border-color:var(--c-primary); color:var(--c-tab); }
     .btn-bdd:hover { background:rgba(161,0,255,.28); color:var(--c-tab); }
 
-    /* BDD accordion */
-    .bdd-toggle {
-      display:flex; align-items:center; gap:8px; padding:9px 16px;
-      background:rgba(13,122,78,.07); border-top:1px solid rgba(13,122,78,.2);
-      cursor:pointer; font-size:.75rem; font-weight:600; color:#6fcf6f;
-      list-style:none; user-select:none;
-    }
-    .bdd-toggle:hover { background:rgba(13,122,78,.13); }
-    .bdd-toggle .arrow { margin-left:auto; font-size:.7rem; color:var(--c-placeholder); }
-    .bdd-pre {
-      margin:0; padding:12px 16px; font-size:.73rem; line-height:1.6;
-      color:#8de8ad; white-space:pre-wrap; word-break:break-word;
-      background:rgba(13,122,78,.04); border-top:1px solid rgba(13,122,78,.15);
-    }
-
-    /* Regra de negócio */
+    /* ── Regra de negócio ── */
     .rule-box {
       padding:10px 16px 12px;
       border-top:1px solid var(--c-border);
@@ -150,15 +136,150 @@
       padding:3px 0;
       display:flex; align-items:baseline; gap:6px;
     }
-    .rule-scenario::before {
-      content:'→';
-      color:var(--c-tab); font-size:.7rem; flex-shrink:0;
+    .rule-scenario::before { content:'→'; color:var(--c-tab); font-size:.7rem; flex-shrink:0; }
+
+
+    /* ── Mapa de elementos ── */
+    .el-map {
+      border-top:1px solid var(--c-border);
+      background:rgba(0,0,0,.12);
+      padding:10px 16px 12px;
+    }
+    .el-map-header {
+      display:flex; align-items:center; gap:8px; margin-bottom:8px;
+      font-size:.6rem; font-weight:700; color:#89c4ff;
+      letter-spacing:.08em; text-transform:uppercase;
+    }
+    .el-map-count {
+      font-size:.58rem; background:rgba(0,100,200,.15); border:1px solid rgba(0,100,200,.3);
+      color:#89c4ff; border-radius:50px; padding:1px 7px; font-weight:600;
+    }
+    .el-table { width:100%; border-collapse:collapse; }
+    .el-table tr { border-bottom:1px solid rgba(90,0,153,.18); }
+    .el-table tr:last-child { border-bottom:none; }
+    .el-tc {
+      padding:3px 8px 3px 0; white-space:nowrap; vertical-align:middle;
+      font-size:.6rem; font-weight:700; border-radius:4px; width:72px;
+    }
+    .el-lc {
+      padding:3px 0; font-size:.73rem; color:var(--c-text);
+      word-break:break-word; vertical-align:middle;
+    }
+    .et-goto  { color:#89c4ff; }
+    .et-click { color:#6fcf6f; }
+    .et-fill  { color:#d966ff; }
+    .et-screenshot { color:var(--c-placeholder); }
+    .et-human { color:#ffc75f; }
+    /* SUITE: grupo por cenário */
+    /* SUITE: grupo por cenário (details/summary expansível) */
+    .el-sc-group {
+      border:1px solid rgba(90,0,153,.35);
+      border-radius:8px; overflow:hidden;
+      margin-bottom:8px;
+    }
+    .el-sc-group:last-child { margin-bottom:0; }
+    .el-sc-group > summary {
+      font-size:.68rem; font-weight:700; color:var(--c-tab);
+      padding:7px 10px;
+      background:rgba(161,0,255,.1);
+      cursor:pointer; user-select:none; list-style:none;
+      display:flex; align-items:center; justify-content:space-between;
+      gap:8px;
+    }
+    .el-sc-group > summary:hover { background:rgba(161,0,255,.18); }
+    .el-sc-group > summary::after {
+      content:'▾'; font-size:.65rem; color:var(--c-placeholder);
+      transition: transform .2s;
+    }
+    .el-sc-group[open] > summary::after { transform:rotate(-180deg); }
+    .el-sc-group[open] > summary { border-bottom:1px solid rgba(90,0,153,.35); }
+    .el-sc-group .el-table { padding:0 4px; }
+    .el-sc-group .el-table tr { border-bottom:1px solid rgba(90,0,153,.15); }
+    .el-sc-group .el-table tr:last-child { border-bottom:none; }
+    .el-sc-group .el-tc { padding:4px 8px 4px 6px; }
+    .el-sc-group .el-lc { padding:4px 6px 4px 0; }
+
+    /* ── Raw bar (download / reprocessar) ── */
+    .raw-bar {
+      border-top:1px solid var(--c-border);
+      padding:8px 16px;
+      display:flex; align-items:center; gap:10px;
+      background:rgba(0,0,0,.1);
+    }
+    .raw-filename {
+      font-size:.68rem; color:var(--c-placeholder); flex:1; min-width:0;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    .raw-filename code { font-size:.65rem; }
+    .raw-actions { display:flex; gap:6px; flex-shrink:0; }
+    .btn-dl {
+      font-size:.65rem; font-weight:600; padding:4px 10px;
+      border-radius:var(--r-btn); border:1px solid rgba(0,150,255,.4);
+      background:rgba(0,100,200,.12); color:#89c4ff; cursor:pointer;
+      text-decoration:none; white-space:nowrap; display:inline-block;
+    }
+    .btn-dl:hover { background:rgba(0,100,200,.25); color:#89c4ff; }
+    .btn-rp {
+      font-size:.65rem; font-weight:600; padding:4px 10px;
+      border-radius:var(--r-btn); border:1px solid rgba(196,121,0,.4);
+      background:rgba(196,121,0,.1); color:#ffc75f; cursor:pointer;
+      white-space:nowrap; display:inline-block;
+    }
+    .btn-rp:hover { background:rgba(196,121,0,.22); color:#ffc75f; }
+    .btn-rp:disabled { opacity:.5; cursor:default; }
+
+    /* ── BDD accordion ── */
+    .bdd-toggle {
+      display:flex; align-items:center; gap:8px; padding:9px 16px;
+      background:rgba(13,122,78,.07); border-top:1px solid rgba(13,122,78,.2);
+      cursor:pointer; font-size:.75rem; font-weight:600; color:#6fcf6f;
+      list-style:none; user-select:none;
+    }
+    .bdd-toggle:hover { background:rgba(13,122,78,.13); }
+    .bdd-toggle .arrow { margin-left:auto; font-size:.7rem; color:var(--c-placeholder); }
+    .bdd-pre {
+      margin:0; padding:12px 16px; font-size:.73rem; line-height:1.6;
+      color:#8de8ad; white-space:pre-wrap; word-break:break-word;
+      background:rgba(13,122,78,.04); border-top:1px solid rgba(13,122,78,.15);
     }
 
-    /* Suite chips */
-    .suite-sc-list { display:flex; flex-wrap:wrap; gap:5px; padding:8px 16px 12px; border-top:1px solid var(--c-border); }
+    /* ── Suite scenario table ── */
+    .suite-sc-table { border-top:1px solid var(--c-border); }
+    .suite-sc-row {
+      display:flex; align-items:center; gap:10px;
+      padding:8px 16px;
+      border-bottom:1px solid rgba(90,0,153,.25);
+    }
+    .suite-sc-row:last-child { border-bottom:none; }
+    .suite-sc-info { display:flex; align-items:center; gap:7px; min-width:220px; flex-shrink:0; }
+    .suite-sc-name { font-size:.76rem; font-weight:500; color:var(--c-text); }
+    .suite-sc-els {
+      display:flex; flex-wrap:wrap; gap:4px; flex:1; min-width:0;
+    }
+    .el-chip {
+      display:inline-flex; align-items:center; gap:3px;
+      font-size:.6rem; background:rgba(0,0,0,.2); border:1px solid rgba(90,0,153,.3);
+      border-radius:5px; padding:2px 6px; color:var(--c-placeholder);
+      white-space:nowrap; max-width:160px; overflow:hidden; text-overflow:ellipsis;
+    }
+    .el-chip-icon { flex-shrink:0; }
+    .more-chip {
+      display:inline-flex; align-items:center;
+      font-size:.6rem; color:var(--c-placeholder); padding:2px 4px;
+    }
+    .suite-sc-btns { display:flex; gap:4px; flex-shrink:0; }
+    .btn-icon-sm {
+      font-size:.7rem; padding:4px 8px; border-radius:7px; border:1px solid;
+      cursor:pointer; background:none; text-decoration:none; white-space:nowrap;
+      display:inline-block;
+    }
+    .btn-icon-dl { border-color:rgba(0,150,255,.35); color:#89c4ff; }
+    .btn-icon-dl:hover { background:rgba(0,100,200,.15); color:#89c4ff; }
+    .btn-icon-rp { border-color:rgba(196,121,0,.35); color:#ffc75f; }
+    .btn-icon-rp:hover { background:rgba(196,121,0,.15); color:#ffc75f; }
+    .btn-icon-rp:disabled { opacity:.5; cursor:default; }
 
-    /* Stats */
+    /* ── Stats ── */
     .stats-bar { display:flex; gap:10px; margin-bottom:28px; }
     .stat-chip {
       flex:1; padding:12px 16px; background:var(--c-sidebar);
@@ -167,10 +288,10 @@
     .stat-chip .num { font-size:1.4rem; font-weight:700; color:var(--c-title); }
     .stat-chip .lbl { font-size:.65rem; color:var(--c-placeholder); margin-top:2px; }
 
-    /* Empty state */
+    /* ── Empty state ── */
     .empty { text-align:center; padding:32px 20px; color:var(--c-placeholder); font-size:.82rem; }
 
-    /* Glossário markdown */
+    /* ── Glossário markdown ── */
     .glossario {
       background: var(--c-sidebar);
       border: 1px solid var(--c-border);
@@ -178,54 +299,46 @@
       padding: 24px 28px;
       margin-top: 8px;
     }
-    .glossario h2 {
-      font-size:.9rem; font-weight:700; color:var(--c-title);
-      margin:20px 0 8px; padding-bottom:6px;
-      border-bottom:1px solid var(--c-border);
-    }
+    .glossario h2 { font-size:.9rem; font-weight:700; color:var(--c-title); margin:20px 0 8px; padding-bottom:6px; border-bottom:1px solid var(--c-border); }
     .glossario h2:first-child { margin-top:0; }
     .glossario h3 { font-size:.82rem; font-weight:700; color:var(--c-tab); margin:16px 0 6px; }
-    .glossario p { font-size:.82rem; color:var(--c-text); margin:0 0 10px; line-height:1.6; }
+    .glossario p  { font-size:.82rem; color:var(--c-text); margin:0 0 10px; line-height:1.6; }
     .glossario ul, .glossario ol { font-size:.82rem; color:var(--c-text); padding-left:20px; margin:0 0 12px; line-height:1.7; }
     .glossario li { margin-bottom:2px; }
     .glossario strong { color:var(--c-title); }
     .glossario em { color:var(--c-placeholder); }
-    .glossario code {
-      color:var(--c-tab); background:rgba(161,0,255,.12);
-      padding:2px 7px; border-radius:5px; font-size:.72rem;
-    }
-    .glossario pre {
-      background:#0A0015 !important; border:1px solid var(--c-border);
-      border-radius:var(--r-btn); padding:12px 16px;
-      font-size:.72rem; line-height:1.6; color:var(--c-text);
-      overflow-x:auto; white-space:pre; margin:0 0 14px;
-    }
+    .glossario code { color:var(--c-tab); background:rgba(161,0,255,.12); padding:2px 7px; border-radius:5px; font-size:.72rem; }
+    .glossario pre { background:#0A0015 !important; border:1px solid var(--c-border); border-radius:var(--r-btn); padding:12px 16px; font-size:.72rem; line-height:1.6; color:var(--c-text); overflow-x:auto; white-space:pre; margin:0 0 14px; }
     .glossario pre code { background:transparent; padding:0; font-size:.72rem; color:inherit; }
     .glossario table { width:100%; border-collapse:collapse; margin:0 0 14px; font-size:.8rem; }
-    .glossario th {
-      text-align:left; padding:7px 12px; background:rgba(161,0,255,.1);
-      border:1px solid var(--c-border); color:var(--c-tab); font-weight:600;
-    }
+    .glossario th { text-align:left; padding:7px 12px; background:rgba(161,0,255,.1); border:1px solid var(--c-border); color:var(--c-tab); font-weight:600; }
     .glossario td { padding:7px 12px; border:1px solid var(--c-border); color:var(--c-text); vertical-align:top; }
-    .glossario blockquote {
-      border-left:3px solid var(--c-primary); padding:6px 14px; margin:0 0 12px;
-      background:rgba(161,0,255,.07); border-radius:0 var(--r-btn) var(--r-btn) 0;
-      font-size:.8rem; color:var(--c-placeholder);
-    }
+    .glossario blockquote { border-left:3px solid var(--c-primary); padding:6px 14px; margin:0 0 12px; background:rgba(161,0,255,.07); border-radius:0 var(--r-btn) var(--r-btn) 0; font-size:.8rem; color:var(--c-placeholder); }
     .glossario hr { border-color:var(--c-border); margin:16px 0; }
 
-    /* Refresh indicator */
-    #refresh-badge {
-      font-size:.65rem; color:var(--c-placeholder);
-      display:flex; align-items:center; gap:5px; margin-top:4px;
-    }
-    .refresh-dot {
-      width:6px; height:6px; border-radius:50%;
-      background:var(--c-placeholder); display:inline-block;
-      transition: background .3s;
-    }
+    /* ── Refresh indicator ── */
+    #refresh-badge { font-size:.65rem; color:var(--c-placeholder); display:flex; align-items:center; gap:5px; margin-top:4px; }
+    .refresh-dot { width:6px; height:6px; border-radius:50%; background:var(--c-placeholder); display:inline-block; transition: background .3s; }
     .refresh-dot.active { background:#6fcf6f; animation: pulse .5s ease; }
     @keyframes pulse { 0%{transform:scale(1)} 50%{transform:scale(1.6)} 100%{transform:scale(1)} }
+
+    /* ── Toast notifications ── */
+    #toast-area {
+      position:fixed; bottom:20px; right:20px; z-index:9999;
+      display:flex; flex-direction:column; gap:8px; pointer-events:none;
+    }
+    .toast {
+      font-size:.78rem; font-weight:500; padding:10px 16px;
+      border-radius:var(--r-btn); border:1px solid;
+      opacity:0; transform:translateY(8px);
+      transition: opacity .25s, transform .25s;
+      pointer-events:none; max-width:320px;
+    }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast-info    { background:rgba(0,80,160,.85); border-color:rgba(0,150,255,.5); color:#89c4ff; }
+    .toast-success { background:rgba(13,80,40,.85);  border-color:rgba(13,122,78,.5); color:#6fcf6f; }
+    .toast-error   { background:rgba(100,0,0,.85);   border-color:rgba(180,0,0,.5);  color:#ff6b6b; }
+    .toast-warn    { background:rgba(100,60,0,.85);  border-color:#c47900;           color:#ffc75f; }
   </style>
 </head>
 <body>
@@ -233,10 +346,10 @@
 <nav class="navbar">
   <a href="/" class="navbar-brand">⚜️ Orchestrator</a>
   <div class="nav-pills">
-    <a href="/"       class="nav-pill">🏠 Início</a>
-    <a href="/mapa"   class="nav-pill active">📚 Biblioteca</a>
-    <a href="/library"class="nav-pill">📸 Evidências</a>
-    <a href="/reset"  class="nav-pill">↩ Reiniciar</a>
+    <a href="/"        class="nav-pill">🏠 Início</a>
+    <a href="/mapa"    class="nav-pill active">📚 Docs</a>
+    <a href="/library" class="nav-pill">📸 Evidências</a>
+    <a href="/reset"   class="nav-pill">↩ Reiniciar</a>
   </div>
 </nav>
 
@@ -246,10 +359,10 @@
   <div style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:24px;">
     <div>
       <h1 style="font-size:1.5rem; font-weight:700; color:var(--c-title); margin-bottom:4px;">
-        📚 Biblioteca de Automações
+        📚 Docs de Automações
       </h1>
       <p style="color:var(--c-placeholder); font-size:.82rem; margin:0;">
-        Visão geral de todos os cenários — gravação, código limpo, BDD e evidências.
+        Visão geral de todos os cenários — regras de negócio, elementos mapeados, BDD e status.
       </p>
     </div>
     <div id="refresh-badge">
@@ -270,7 +383,7 @@
     <div class="stat-chip"><div class="num" id="stat-bdd" style="color:#8de8ad;">{{ tb }}</div><div class="lbl">Com BDD</div></div>
   </div>
 
-  <!-- Cenários unitários -->
+  <!-- ── Cenários Unitários ─────────────────────────────────────────────────── -->
   <div class="section-header">
     <span class="section-title">🎯 Cenários Unitários</span>
     <span class="section-count" id="count-single">{{ single | length }}</span>
@@ -281,6 +394,8 @@
     {% endif %}
     {% for sc in single %}
     <div class="sc-card" data-name="{{ sc.name }}">
+
+      <!-- Header -->
       <div class="sc-header">
         <div class="sc-name">{{ sc.name }}</div>
         <div class="status-row">
@@ -294,14 +409,8 @@
           {% else %}
           <span class="status-pill pill-grey">⏳ Não processado</span>
           {% endif %}
-          {% if sc.has_bdd %}
-          <span class="status-pill pill-green">📄 BDD</span>
-          {% else %}
-          <span class="status-pill pill-grey">📄 Sem BDD</span>
-          {% endif %}
-          {% if sc.evidence_count > 0 %}
-          <span class="status-pill pill-green">📸 {{ sc.evidence_count }}</span>
-          {% endif %}
+          {% if sc.has_bdd %}<span class="status-pill pill-green">📄 BDD</span>{% else %}<span class="status-pill pill-grey">📄 Sem BDD</span>{% endif %}
+          {% if sc.evidence_count > 0 %}<span class="status-pill pill-green">📸 {{ sc.evidence_count }}</span>{% endif %}
         </div>
         <div class="sc-actions">
           {% if sc.has_clean %}
@@ -311,6 +420,8 @@
           {% endif %}
         </div>
       </div>
+
+      <!-- Regra de negócio -->
       {% if sc.rule and sc.rule.feature %}
       <div class="rule-box">
         <div class="rule-label">📋 Regra de negócio</div>
@@ -322,6 +433,8 @@
         {% endif %}
       </div>
       {% endif %}
+
+      <!-- Gherkin BDD -->
       {% if sc.feature_content %}
       <details data-bdd="{{ sc.name }}">
         <summary class="bdd-toggle">
@@ -331,13 +444,38 @@
         <pre class="bdd-pre">{{ sc.feature_content }}</pre>
       </details>
       {% endif %}
+
+      <!-- Mapa de elementos -->
+      {% if sc.elements %}
+      <div class="el-map">
+        <div class="el-map-header">📍 Mapa de elementos <span class="el-map-count">{{ sc.elements | length }}</span></div>
+        <table class="el-table">
+          {% for el in sc.elements %}
+          <tr>
+            <td class="el-tc et-{{ el.kind }}">{{ el.icon }} {{ el.kind }}</td>
+            <td class="el-lc">{{ el.label }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- Raw bar: download / reprocessar -->
+      <div class="raw-bar">
+        <span class="raw-filename">📁 <code>{{ sc.name }}.py</code></span>
+        <div class="raw-actions">
+          <a href="/download-raw/single/{{ sc.name }}" class="btn-dl" download>📥 Baixar raw</a>
+          <button class="btn-rp" onclick="reprocess('single','{{ sc.name }}')">🔄 Reprocessar</button>
+        </div>
+      </div>
+
     </div>
     {% endfor %}
   </div>
 
   <div style="margin-top:32px;"></div>
 
-  <!-- Baterias -->
+  <!-- ── Baterias de Teste ──────────────────────────────────────────────────── -->
   <div class="section-header">
     <span class="section-title">📦 Baterias de Teste</span>
     <span class="section-count" id="count-suite">{{ suite | length }}</span>
@@ -348,37 +486,42 @@
     {% endif %}
     {% for plan in suite %}
     <div class="sc-card" data-name="{{ plan.name }}">
+
+      <!-- Header -->
       <div class="sc-header">
         <div class="sc-name">{{ plan.name }}</div>
         <div class="status-row">
           <span class="status-pill {{ 'pill-green' if plan.clean_count == plan.total else 'pill-yellow' }}">
             ✅ {{ plan.clean_count }}/{{ plan.total }} limpos
           </span>
-          {% if plan.has_bdd %}
-          <span class="status-pill pill-green">📄 BDD</span>
-          {% else %}
-          <span class="status-pill pill-grey">📄 Sem BDD</span>
-          {% endif %}
+          {% if plan.has_bdd %}<span class="status-pill pill-green">📄 BDD</span>{% else %}<span class="status-pill pill-grey">📄 Sem BDD</span>{% endif %}
         </div>
         <div class="sc-actions">
-          {% if plan.can_run %}
-          <a href="/regression/{{ plan.name }}" class="btn-mini btn-run">🚀 Regressão</a>
-          {% endif %}
-          {% if plan.clean_count < plan.total %}
-          <a href="/process-plan/{{ plan.name }}" class="btn-mini btn-process">⚙️ Processar</a>
-          {% endif %}
-          {% if not plan.has_bdd and plan.can_run %}
-          <a href="/generate-suite-bdd/{{ plan.name }}" class="btn-mini btn-bdd">📄 Gerar BDD</a>
-          {% endif %}
+          {% if plan.can_run %}<a href="/regression/{{ plan.name }}" class="btn-mini btn-run">🚀 Regressão</a>{% endif %}
+          {% if plan.clean_count < plan.total %}<a href="/process-plan/{{ plan.name }}" class="btn-mini btn-process">⚙️ Processar</a>{% endif %}
+          {% if not plan.has_bdd and plan.can_run %}<a href="/generate-suite-bdd/{{ plan.name }}" class="btn-mini btn-bdd">📄 Gerar BDD</a>{% endif %}
         </div>
       </div>
-      <div class="suite-sc-list">
+
+      <!-- Scenarios table -->
+      <div class="suite-sc-table">
         {% for sc in plan.scenarios %}
-        <span class="status-pill {{ 'pill-green' if sc.has_clean else 'pill-grey' }}">
-          {{ '✅' if sc.has_clean else '⏳' }} {{ sc.name }}
-        </span>
+        <div class="suite-sc-row">
+          <div class="suite-sc-info">
+            <span class="status-pill {{ 'pill-green' if sc.has_clean else 'pill-grey' }}" style="font-size:.55rem; padding:2px 7px;">
+              {{ '✅' if sc.has_clean else '⏳' }}
+            </span>
+            <span class="suite-sc-name">{{ sc.name }}</span>
+          </div>
+          <div class="suite-sc-btns">
+            <a href="/download-raw/suite/{{ plan.name }}/{{ sc.name }}" class="btn-icon-sm btn-icon-dl" download title="Baixar gravação raw">📥</a>
+            <button class="btn-icon-sm btn-icon-rp" onclick="reprocess('suite','{{ plan.name }}','{{ sc.name }}')" title="Reprocessar com IA">🔄</button>
+          </div>
+        </div>
         {% endfor %}
       </div>
+
+      <!-- Regra de negócio (da suite) -->
       {% if plan.rule and plan.rule.feature %}
       <div class="rule-box">
         <div class="rule-label">📋 Regra de negócio</div>
@@ -390,6 +533,8 @@
         {% endif %}
       </div>
       {% endif %}
+
+      <!-- Gherkin BDD -->
       {% if plan.feature_content %}
       <details data-bdd="{{ plan.name }}">
         <summary class="bdd-toggle">
@@ -399,27 +544,53 @@
         <pre class="bdd-pre">{{ plan.feature_content }}</pre>
       </details>
       {% endif %}
+
+      <!-- Mapa de elementos por cenário -->
+      {% set has_elements = plan.scenarios | selectattr('elements') | list | length > 0 %}
+      {% if has_elements %}
+      <div class="el-map">
+        <div class="el-map-header">📍 Mapa de elementos por cenário</div>
+        {% for sc in plan.scenarios %}
+        {% if sc.elements %}
+        <details class="el-sc-group">
+          <summary>{{ sc.name }} <span style="font-weight:400;color:var(--c-placeholder);">({{ sc.elements|length }})</span></summary>
+          <table class="el-table">
+            {% for el in sc.elements %}
+            <tr>
+              <td class="el-tc et-{{ el.kind }}">{{ el.icon }} {{ el.kind }}</td>
+              <td class="el-lc">{{ el.label }}</td>
+            </tr>
+            {% endfor %}
+          </table>
+        </details>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
     </div>
     {% endfor %}
   </div>
 
+  <!-- ── Regras de negócio (glossário) ─────────────────────────────────────── -->
   {% if regras_md %}
   <div style="margin-top:40px;">
     <div class="section-header">
-      <span class="section-title">📋 Regras de Negócio</span>
+      <span class="section-title">📋 Regras do Orchestrator</span>
       <span class="section-count">glossário</span>
     </div>
-    <div class="glossario" id="glossario-body">
-      <!-- Renderizado via marked.js -->
-    </div>
+    <div class="glossario" id="glossario-body"></div>
   </div>
   {% endif %}
 
 </div>
 
+<!-- Toast area -->
+<div id="toast-area"></div>
+
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-// ── Glossário ─────────────────────────────────────────────────────────────────
+// ── Glossário ────────────────────────────────────────────────────────────────
 {% if regras_md %}
 (function () {
   const raw = {{ regras_md | tojson }};
@@ -427,36 +598,123 @@
 })();
 {% endif %}
 
-// ── helpers ─────────────────────────────────────────────────────────────────
-
+// ── helpers ──────────────────────────────────────────────────────────────────
 function esc(s) {
   return String(s ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function ts() {
+  return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
 }
 
-function ts() {
-  return new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+// ── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const area = document.getElementById('toast-area');
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.textContent = msg;
+  area.appendChild(t);
+  requestAnimationFrame(() => { requestAnimationFrame(() => t.classList.add('show')); });
+  setTimeout(() => {
+    t.classList.remove('show');
+    setTimeout(() => t.remove(), 300);
+  }, 4500);
+}
+
+// ── Reprocess ────────────────────────────────────────────────────────────────
+async function reprocess(type, planOrName, scenarioName) {
+  const displayName = type === 'single' ? planOrName : scenarioName;
+  const url = type === 'single'
+    ? `/api/reprocess/single/${encodeURIComponent(planOrName)}`
+    : `/api/reprocess/suite/${encodeURIComponent(planOrName)}/${encodeURIComponent(scenarioName)}`;
+
+  showToast(`🔄 Reprocessando ${displayName}…`, 'info');
+
+  // Desabilita o botão clicado
+  const btns = document.querySelectorAll('.btn-rp, .btn-icon-rp');
+  btns.forEach(b => b.disabled = true);
+
+  try {
+    const res  = await fetch(url, { method: 'POST' });
+    const data = await res.json();
+    if (data.error) {
+      showToast(`❌ ${data.error}`, 'error');
+      btns.forEach(b => b.disabled = false);
+      return;
+    }
+    pollReprocess(data.job_id, displayName, btns);
+  } catch (e) {
+    showToast('❌ Erro ao iniciar reprocessamento', 'error');
+    btns.forEach(b => b.disabled = false);
+  }
+}
+
+async function pollReprocess(jobId, name, btns) {
+  const check = async () => {
+    try {
+      const res  = await fetch(`/api/job-status/${jobId}`);
+      const data = await res.json();
+      if (data.status === 'done') {
+        showToast(`✅ ${name} reprocessado com sucesso!`, 'success');
+        btns.forEach(b => b.disabled = false);
+        refresh(); // atualiza os cards
+      } else if (data.status === 'unknown') {
+        showToast(`⚠️ Não foi possível verificar o status`, 'warn');
+        btns.forEach(b => b.disabled = false);
+      } else {
+        setTimeout(check, 2500);
+      }
+    } catch (e) { setTimeout(check, 3000); }
+  };
+  setTimeout(check, 2500);
+}
+
+// ── element map builder ──────────────────────────────────────────────────────
+const ET = { goto:'et-goto', click:'et-click', fill:'et-fill', screenshot:'et-screenshot', human:'et-human' };
+
+function buildElTable(elements) {
+  if (!elements || !elements.length) return '';
+  const rows = elements.map(el =>
+    `<tr>
+       <td class="el-tc ${ET[el.kind]||'et-click'}">${esc(el.icon)} ${esc(el.kind)}</td>
+       <td class="el-lc">${esc(el.label)}</td>
+     </tr>`
+  ).join('');
+  return `<table class="el-table">${rows}</table>`;
+}
+
+function buildElMap(elements, count) {
+  if (!elements || !elements.length) return '';
+  return `<div class="el-map">
+    <div class="el-map-header">📍 Mapa de elementos <span class="el-map-count">${count}</span></div>
+    ${buildElTable(elements)}
+  </div>`;
+}
+
+function buildSuiteElMap(scenarios) {
+  const groups = (scenarios || []).filter(s => s.elements && s.elements.length);
+  if (!groups.length) return '';
+  const body = groups.map(s =>
+    `<details class="el-sc-group">
+       <summary>${esc(s.name)} <span style="font-weight:400;color:var(--c-placeholder);">(${s.elements.length})</span></summary>
+       ${buildElTable(s.elements)}
+     </details>`
+  ).join('');
+  return `<div class="el-map"><div class="el-map-header">📍 Mapa de elementos por cenário</div>${body}</div>`;
 }
 
 // ── card builders ────────────────────────────────────────────────────────────
-
 function buildSingleCard(sc) {
   const cleanPill = sc.has_clean
-    ? (sc.status === 'failed'
+    ? (sc.status==='failed'
         ? `<span class="status-pill pill-red">⚠️ Falha</span>`
         : `<span class="status-pill pill-green">✅ Limpo</span>`)
     : `<span class="status-pill pill-grey">⏳ Não processado</span>`;
-
   const bddPill = sc.has_bdd
     ? `<span class="status-pill pill-green">📄 BDD</span>`
     : `<span class="status-pill pill-grey">📄 Sem BDD</span>`;
-
   const evPill = sc.evidence_count > 0
     ? `<span class="status-pill pill-green">📸 ${sc.evidence_count}</span>` : '';
-
   const action = sc.has_clean
     ? `<a href="${esc(sc.run_url)}" class="btn-mini btn-run">▶️ Executar</a>`
     : `<a href="/processing?name=${esc(sc.name)}" class="btn-mini btn-process">⚙️ Processar</a>`;
@@ -474,16 +732,21 @@ function buildSingleCard(sc) {
          <pre class="bdd-pre">${esc(sc.feature_content)}</pre>
        </details>` : '';
 
+  const rawBar = `<div class="raw-bar">
+    <span class="raw-filename">📁 <code>${esc(sc.name)}.py</code></span>
+    <div class="raw-actions">
+      <a href="/download-raw/single/${esc(sc.name)}" class="btn-dl" download>📥 Baixar raw</a>
+      <button class="btn-rp" onclick="reprocess('single','${esc(sc.name)}')">🔄 Reprocessar</button>
+    </div>
+  </div>`;
+
   return `<div class="sc-card" data-name="${esc(sc.name)}">
     <div class="sc-header">
       <div class="sc-name">${esc(sc.name)}</div>
-      <div class="status-row">
-        <span class="status-pill pill-green">🎬 Gravado</span>
-        ${cleanPill}${bddPill}${evPill}
-      </div>
+      <div class="status-row"><span class="status-pill pill-green">🎬 Gravado</span>${cleanPill}${bddPill}${evPill}</div>
       <div class="sc-actions">${action}</div>
     </div>
-    ${ruleBox}${bddSection}
+    ${ruleBox}${bddSection}${buildElMap(sc.elements, (sc.elements||[]).length)}${rawBar}
   </div>`;
 }
 
@@ -492,15 +755,22 @@ function buildSuiteCard(plan) {
   const bddPill = plan.has_bdd
     ? `<span class="status-pill pill-green">📄 BDD</span>`
     : `<span class="status-pill pill-grey">📄 Sem BDD</span>`;
+  const runBtn  = plan.can_run ? `<a href="/regression/${esc(plan.name)}" class="btn-mini btn-run">🚀 Regressão</a>` : '';
+  const procBtn = plan.clean_count < plan.total ? `<a href="/process-plan/${esc(plan.name)}" class="btn-mini btn-process">⚙️ Processar</a>` : '';
+  const bddBtn  = (!plan.has_bdd && plan.can_run) ? `<a href="/generate-suite-bdd/${esc(plan.name)}" class="btn-mini btn-bdd">📄 Gerar BDD</a>` : '';
 
-  const chips = plan.scenarios.map(s =>
-    `<span class="status-pill ${s.has_clean ? 'pill-green' : 'pill-grey'}">
-       ${s.has_clean ? '✅' : '⏳'} ${esc(s.name)}
-     </span>`).join('');
-
-  const runBtn   = plan.can_run ? `<a href="/regression/${esc(plan.name)}" class="btn-mini btn-run">🚀 Regressão</a>` : '';
-  const procBtn  = plan.clean_count < plan.total ? `<a href="/process-plan/${esc(plan.name)}" class="btn-mini btn-process">⚙️ Processar</a>` : '';
-  const bddBtn   = (!plan.has_bdd && plan.can_run) ? `<a href="/generate-suite-bdd/${esc(plan.name)}" class="btn-mini btn-bdd">📄 Gerar BDD</a>` : '';
+  const scRows = (plan.scenarios || []).map(s => {
+    const pill = `<span class="status-pill ${s.has_clean?'pill-green':'pill-grey'}" style="font-size:.55rem;padding:2px 7px;">${s.has_clean?'✅':'⏳'}</span>`;
+    const planN = esc(plan.name);
+    const scN   = esc(s.name);
+    return `<div class="suite-sc-row">
+      <div class="suite-sc-info">${pill}<span class="suite-sc-name">${scN}</span></div>
+      <div class="suite-sc-btns">
+        <a href="/download-raw/suite/${planN}/${scN}" class="btn-icon-sm btn-icon-dl" download title="Baixar gravação raw">📥</a>
+        <button class="btn-icon-sm btn-icon-rp" onclick="reprocess('suite','${planN}','${scN}')" title="Reprocessar com IA">🔄</button>
+      </div>
+    </div>`;
+  }).join('');
 
   const planRuleBox = (plan.rule && plan.rule.feature)
     ? `<div class="rule-box">
@@ -524,34 +794,29 @@ function buildSuiteCard(plan) {
       </div>
       <div class="sc-actions">${runBtn}${procBtn}${bddBtn}</div>
     </div>
-    <div class="suite-sc-list">${chips}</div>
-    ${planRuleBox}${bddSection}
+    <div class="suite-sc-table">${scRows}</div>
+    ${planRuleBox}${bddSection}${buildSuiteElMap(plan.scenarios)}
   </div>`;
 }
 
 // ── polling ──────────────────────────────────────────────────────────────────
-
 function getOpenBdds() {
   const open = new Set();
   document.querySelectorAll('details[data-bdd][open]').forEach(d => open.add(d.dataset.bdd));
   return open;
 }
-
 function restoreOpen(openSet) {
   document.querySelectorAll('details[data-bdd]').forEach(d => {
     if (openSet.has(d.dataset.bdd)) d.open = true;
   });
 }
-
 function flashCard(name) {
   const el = document.querySelector(`.sc-card[data-name="${CSS.escape(name)}"]`);
   if (!el) return;
-  el.classList.remove('updated');
-  void el.offsetWidth; // reflow
+  el.classList.remove('updated'); void el.offsetWidth;
   el.classList.add('updated');
   setTimeout(() => el.classList.remove('updated'), 700);
 }
-
 function updateStats(data) {
   const tc = data.single.filter(s => s.has_clean).length;
   const tb = data.single.filter(s => s.has_bdd).length + data.suite.filter(p => p.has_bdd).length;
@@ -566,45 +831,36 @@ function updateStats(data) {
 async function refresh() {
   const dot = document.getElementById('refresh-dot');
   dot.classList.add('active');
-
   try {
     const res  = await fetch('/api/overview');
     const data = await res.json();
     const open = getOpenBdds();
 
-    // ── single list ─────────────────────────────────────────────────────────
-    const singleEl = document.getElementById('single-list');
-    // detecta mudanças de status por cenário
-    const prevNames = new Set([...singleEl.querySelectorAll('.sc-card')].map(c => c.dataset.name));
-    if (data.single.length === 0) {
-      singleEl.innerHTML = '<div class="empty">Nenhum cenário gravado em <code>flows/unity-test/</code>.</div>';
-    } else {
-      singleEl.innerHTML = data.single.map(buildSingleCard).join('');
-      data.single.forEach(sc => { if (!prevNames.has(sc.name)) flashCard(sc.name); });
-    }
+    const singleEl  = document.getElementById('single-list');
+    const prevSingle = new Set([...singleEl.querySelectorAll('.sc-card')].map(c => c.dataset.name));
+    singleEl.innerHTML = data.single.length === 0
+      ? '<div class="empty">Nenhum cenário gravado em <code>flows/unity-test/</code>.</div>'
+      : data.single.map(buildSingleCard).join('');
+    data.single.forEach(sc => { if (!prevSingle.has(sc.name)) flashCard(sc.name); });
 
-    // ── suite list ───────────────────────────────────────────────────────────
-    const suiteEl = document.getElementById('suite-list');
-    const prevPlans = new Set([...suiteEl.querySelectorAll('.sc-card')].map(c => c.dataset.name));
-    if (data.suite.length === 0) {
-      suiteEl.innerHTML = '<div class="empty">Nenhuma bateria encontrada em <code>flows/test-plans/</code>.</div>';
-    } else {
-      suiteEl.innerHTML = data.suite.map(buildSuiteCard).join('');
-      data.suite.forEach(p => { if (!prevPlans.has(p.name)) flashCard(p.name); });
-    }
+    const suiteEl   = document.getElementById('suite-list');
+    const prevSuite = new Set([...suiteEl.querySelectorAll('.sc-card')].map(c => c.dataset.name));
+    suiteEl.innerHTML = data.suite.length === 0
+      ? '<div class="empty">Nenhuma bateria encontrada em <code>flows/test-plans/</code>.</div>'
+      : data.suite.map(buildSuiteCard).join('');
+    data.suite.forEach(p => { if (!prevSuite.has(p.name)) flashCard(p.name); });
 
     restoreOpen(open);
     updateStats(data);
     document.getElementById('refresh-ts').textContent = `atualizado às ${ts()}`;
   } catch (e) {
     document.getElementById('refresh-ts').textContent = `erro ao atualizar (${ts()})`;
-    console.warn('[overview] poll error:', e);
+    console.warn('[docs] poll error:', e);
   } finally {
     setTimeout(() => dot.classList.remove('active'), 400);
   }
 }
 
-// Marca o timestamp inicial e inicia o ciclo
 document.getElementById('refresh-ts').textContent = `carregado às ${ts()}`;
 setInterval(refresh, 10_000);
 </script>

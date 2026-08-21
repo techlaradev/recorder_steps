@@ -1198,6 +1198,84 @@ def library():
     return render_template("library.html", library=_evidence_library())
 
 
+def _extract_elements(test_path: Path) -> list[dict]:
+    """Extrai ações e seletores Playwright de um arquivo de teste Python.
+
+    Retorna lista de dicts com icon, kind (goto/click/fill/screenshot/human) e label.
+    Útil para mostrar na biblioteca quais elementos da UI cada cenário toca.
+    """
+    if not test_path.exists():
+        return []
+    try:
+        text = test_path.read_text(encoding="utf-8")
+    except Exception:
+        return []
+
+    elements = []
+    for line in text.splitlines():
+        s = line.strip()
+        if (not s or s.startswith('#') or s.startswith('from ')
+                or s.startswith('import ') or s.startswith('_EVIDENCES')
+                or s.startswith('def ') or s.startswith('class ')):
+            continue
+
+        # page.goto("url")
+        m = _re.search(r'page\.goto\("([^"]+)"\)', s)
+        if m:
+            url = m.group(1)
+            # Extrai só o path da URL para exibição compacta
+            try:
+                from urllib.parse import urlparse as _up
+                pth = _up(url).path or url
+            except Exception:
+                pth = url
+            elements.append({'kind': 'goto', 'icon': '🔗', 'label': pth})
+            continue
+
+        # page.get_by_role("role", name="name")
+        m = _re.search(r'page\.get_by_role\("([^"]+)"(?:,\s*name="([^"]*)")?\)', s)
+        if m:
+            role, name = m.group(1), m.group(2) or ''
+            action = 'fill' if '.fill(' in s else 'click'
+            icons = {'button': '🔘', 'textbox': '📝', 'heading': '🏷️', 'link': '🔗'}
+            elements.append({'kind': action, 'icon': icons.get(role, '📌'),
+                             'label': f'{role} "{name}"' if name else role})
+            continue
+
+        # page.get_by_text("text")
+        m = _re.search(r'page\.get_by_text\("([^"]+)"\)', s)
+        if m:
+            txt = m.group(1)
+            elements.append({'kind': 'click', 'icon': '💬', 'label': f'"{txt}"'})
+            continue
+
+        # page.get_by_label("label")
+        m = _re.search(r'page\.get_by_label\("([^"]+)"\)', s)
+        if m:
+            elements.append({'kind': 'click', 'icon': '🏷️', 'label': m.group(1)})
+            continue
+
+        # page.locator("selector")
+        m = _re.search(r'page\.locator\("([^"]+)"\)', s)
+        if m:
+            elements.append({'kind': 'click', 'icon': '🔍', 'label': m.group(1)})
+            continue
+
+        # page.screenshot(...)
+        if 'page.screenshot(' in s:
+            m = _re.search(r'"([^"]+\.png)"', s)
+            fname = m.group(1).rsplit('/', 1)[-1] if m else 'screenshot.png'
+            elements.append({'kind': 'screenshot', 'icon': '📸', 'label': fname})
+            continue
+
+        # HumanIntervention.required(...)
+        if 'HumanIntervention.required(' in s:
+            elements.append({'kind': 'human', 'icon': '🧑', 'label': 'Intervenção humana necessária'})
+            continue
+
+    return elements
+
+
 def _extract_rule(feature_path: Path) -> dict:
     """Extrai Feature e Scenarios de um arquivo .feature como regra de negócio."""
     if not feature_path.exists():
@@ -1255,6 +1333,7 @@ def _build_overview() -> dict:
                 "evidence_count":  len(ev_images),
                 "feature_content": feat_txt,
                 "rule":            _extract_rule(feat_file),
+                "elements":        _extract_elements(test_file if has_clean else raw),
                 "run_url":         f"/run-test/{d.name}" if has_clean else None,
             })
 
@@ -1282,6 +1361,7 @@ def _build_overview() -> dict:
                 scenarios.append({
                     "name":      s.name,
                     "has_clean": clean_f.exists(),
+                    "elements":  _extract_elements(clean_f if clean_f.exists() else raw),
                 })
             if not scenarios:
                 continue
@@ -1537,6 +1617,68 @@ def generate_suite_bdd(plan_name: str):
 
     threading.Thread(target=_worker, args=(job_id, plan_name), daemon=True).start()
     return redirect(url_for("processing_wait", job=job_id, label=f"BDD {plan_name}"))
+
+
+@app.route("/download-raw/single/<name>")
+def download_raw_single(name: str):
+    """Faz download do arquivo de gravação raw de um cenário SINGLE."""
+    name = _safe_name(name)
+    raw = Path("flows") / "unity-test" / name / f"{name}.py"
+    if not raw.exists():
+        return "Arquivo não encontrado", 404
+    return send_file(str(raw.resolve()), as_attachment=True, download_name=f"{name}.py")
+
+
+@app.route("/download-raw/suite/<plan>/<scenario>")
+def download_raw_suite(plan: str, scenario: str):
+    """Faz download do arquivo de gravação raw de um cenário SUITE."""
+    plan     = _safe_name(plan)
+    scenario = _safe_name(scenario)
+    raw = Path("flows") / "test-plans" / plan / "scenarios" / scenario / f"{scenario}.py"
+    if not raw.exists():
+        return "Arquivo não encontrado", 404
+    return send_file(str(raw.resolve()), as_attachment=True, download_name=f"{scenario}.py")
+
+
+@app.route("/api/reprocess/single/<name>", methods=["POST"])
+def reprocess_single(name: str):
+    """Reprocessa (re-transforma com Claude CLI) um cenário SINGLE — apaga o código limpo e gera novamente."""
+    name = _safe_name(name)
+    sc = Scenario(name=name, url="", mode=ExecutionMode.SINGLE)
+    if not sc.raw_path.exists():
+        return jsonify({"error": "Gravação não encontrada"}), 404
+    sc.clean_path.unlink(missing_ok=True)
+    job_id = str(_uuid.uuid4())
+    _jobs[job_id] = {"status": "running", "type": "reprocess", "created_at": _time.monotonic()}
+
+    def _worker(jid, scenario):
+        ok, detail = _safe_transform(scenario)
+        _jobs[jid].update({"status": "done", "ok": ok, "detail": detail})
+        _write_flag(scenario, "ready-bdd") if ok else _write_flag(scenario, "transform-failed")
+
+    threading.Thread(target=_worker, args=(job_id, sc), daemon=True).start()
+    return jsonify({"job_id": job_id})
+
+
+@app.route("/api/reprocess/suite/<plan>/<scenario>", methods=["POST"])
+def reprocess_suite_scenario(plan: str, scenario: str):
+    """Reprocessa (re-transforma com Claude CLI) um cenário específico de um plano SUITE."""
+    plan     = _safe_name(plan)
+    scenario = _safe_name(scenario)
+    sc = Scenario(name=scenario, url="", mode=ExecutionMode.SUITE, plan_name=plan)
+    if not sc.raw_path.exists():
+        return jsonify({"error": "Gravação não encontrada"}), 404
+    sc.clean_path.unlink(missing_ok=True)
+    job_id = str(_uuid.uuid4())
+    _jobs[job_id] = {"status": "running", "type": "reprocess", "created_at": _time.monotonic()}
+
+    def _worker(jid, sc_obj):
+        ok, detail = _safe_transform(sc_obj)
+        _jobs[jid].update({"status": "done", "ok": ok, "detail": detail})
+        _write_flag(sc_obj, "ready-bdd") if ok else _write_flag(sc_obj, "transform-failed")
+
+    threading.Thread(target=_worker, args=(job_id, sc), daemon=True).start()
+    return jsonify({"job_id": job_id})
 
 
 @app.route("/reset")
